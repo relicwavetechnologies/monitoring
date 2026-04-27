@@ -188,13 +188,13 @@ export default function LoginPage() {
 
       <div className="relative w-full max-w-sm space-y-6">
         <div className="flex flex-col items-center gap-3 text-center">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 shadow-lg shadow-blue-600/20">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-violet-600 shadow-xl shadow-violet-900/50 ring-1 ring-violet-500/30">
             <Shield className="h-6 w-6 text-white" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">Visa Monitor</h1>
+            <h1 className="text-2xl font-bold tracking-tight" style={{ fontFamily: "var(--font-jakarta)" }}>VisaWatch</h1>
             <p className="text-sm text-muted-foreground mt-0.5">
-              Real-time visa site change detection
+              Real-time visa policy change detection
             </p>
           </div>
         </div>

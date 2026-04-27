@@ -38,17 +38,17 @@ export function Topbar() {
     : session?.user?.email?.[0]?.toUpperCase() ?? "U";
 
   return (
-    <header className="h-14 border-b border-border/50 flex items-center justify-between px-6 bg-background/80 backdrop-blur-sm sticky top-0 z-10">
+    <header className="h-14 border-b border-white/[0.07] flex items-center justify-between px-5 bg-background/70 backdrop-blur-md sticky top-0 z-10">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1 text-sm">
-        <Link href="/" className="text-muted-foreground hover:text-foreground transition-colors">
-          Home
+      <nav className="flex items-center gap-1.5 text-sm">
+        <Link href="/" className="text-muted-foreground hover:text-foreground transition-colors font-medium">
+          VisaWatch
         </Link>
         {crumbs.map(({ href, label }, i) => (
-          <span key={href} className="flex items-center gap-1">
-            <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+          <span key={href} className="flex items-center gap-1.5">
+            <ChevronRight className="h-3.5 w-3.5 text-white/20" />
             {i === crumbs.length - 1 ? (
-              <span className="font-medium text-foreground">{label}</span>
+              <span className="text-foreground font-medium">{label}</span>
             ) : (
               <Link href={href} className="text-muted-foreground hover:text-foreground transition-colors">
                 {label}
@@ -58,35 +58,40 @@ export function Topbar() {
         ))}
       </nav>
 
-      {/* User menu */}
-      <DropdownMenu>
-        <DropdownMenuTrigger className="rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-          <Avatar className="h-8 w-8 cursor-pointer">
-            <AvatarFallback className="text-xs bg-blue-600 text-white">
-              {initials}
-            </AvatarFallback>
-          </Avatar>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-48">
-          <div className="px-2 py-1.5">
-            <p className="text-sm font-medium">{session?.user?.name ?? "User"}</p>
-            <p className="text-xs text-muted-foreground truncate">{session?.user?.email}</p>
-          </div>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => router.push("/settings")}>
-            <Settings className="h-4 w-4 mr-2" />
-            Settings
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem
-            className="text-destructive"
-            onClick={() => signOut({ callbackUrl: "/login" })}
-          >
-            <LogOut className="h-4 w-4 mr-2" />
-            Sign out
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+      {/* Right side */}
+      <div className="flex items-center gap-3">
+        <DropdownMenu>
+          <DropdownMenuTrigger className="rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/50">
+            <Avatar className="h-8 w-8 cursor-pointer ring-2 ring-white/10 hover:ring-violet-500/40 transition-all">
+              <AvatarFallback className="text-xs bg-violet-600 text-white font-semibold">
+                {initials}
+              </AvatarFallback>
+            </Avatar>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-52 bg-card border-white/[0.08]">
+            <div className="px-3 py-2.5">
+              <p className="text-sm font-semibold">{session?.user?.name ?? "User"}</p>
+              <p className="text-xs text-muted-foreground truncate mt-0.5">{session?.user?.email}</p>
+            </div>
+            <DropdownMenuSeparator className="bg-white/[0.07]" />
+            <DropdownMenuItem
+              className="cursor-pointer"
+              onClick={() => router.push("/settings")}
+            >
+              <Settings className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
+              Settings
+            </DropdownMenuItem>
+            <DropdownMenuSeparator className="bg-white/[0.07]" />
+            <DropdownMenuItem
+              className="text-red-400 cursor-pointer focus:text-red-400"
+              onClick={() => signOut({ callbackUrl: "/login" })}
+            >
+              <LogOut className="h-3.5 w-3.5 mr-2" />
+              Sign out
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
     </header>
   );
 }
