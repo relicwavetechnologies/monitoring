@@ -1,0 +1,1767 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VisaWatch — Architecture & Product Documentation</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg:          #EFEFF7;
+      --bg-1:        #F5F5FC;
+      --bg-2:        #E8E8F3;
+      --ink:         #0D0D1C;
+      --ink-2:       #5A5A7A;
+      --ink-3:       #9494B0;
+      --accent:      #6C63FF;
+      --accent-dim:  rgba(108,99,255,0.08);
+      --accent-line: rgba(108,99,255,0.20);
+      --line:        #E8E8F2;
+      --line-2:      #D4D4E8;
+      --green:       #059669;
+      --amber:       #D97706;
+      --red:         #DC2626;
+      --serif:       'Instrument Serif', Georgia, serif;
+      --sans:        'Inter', -apple-system, sans-serif;
+      --mono:        'IBM Plex Mono', monospace;
+      --r:           6px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: var(--sans);
+      font-size: 15px;
+      line-height: 1.65;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    /* ─── LAYOUT ─────────────────────────────── */
+    .shell {
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      min-height: 100vh;
+      width: 100%;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* ─── SIDEBAR ────────────────────────────── */
+    .sidebar {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+      padding: 36px 22px;
+      border-right: 1px solid var(--line);
+      background: var(--bg-1);
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .sidebar::-webkit-scrollbar { width: 0; }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding-bottom: 28px;
+      margin-bottom: 28px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .brand-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 7px;
+      background: var(--accent-dim);
+      border: 1px solid var(--accent-line);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .brand-icon svg { width: 14px; height: 14px; color: var(--accent); }
+
+    .brand-name {
+      font-family: var(--serif);
+      font-size: 17px;
+      letter-spacing: -0.01em;
+      color: var(--ink);
+    }
+
+    .brand-version {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--ink-3);
+      margin-left: auto;
+      letter-spacing: 0.05em;
+    }
+
+    .nav-group-label {
+      font-size: 9.5px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      color: var(--ink-3);
+      padding: 0 8px;
+      margin: 20px 0 8px;
+    }
+
+    .nav-group-label:first-of-type { margin-top: 0; }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 7px 8px;
+      border-radius: var(--r);
+      color: var(--ink-2);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 400;
+      transition: color 0.14s, background 0.14s;
+      line-height: 1.3;
+    }
+
+    .nav-item:hover { color: var(--ink); background: var(--bg-2); }
+
+    .nav-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--line-2);
+      flex-shrink: 0;
+      transition: background 0.14s;
+    }
+
+    .nav-item:hover .nav-dot { background: var(--accent); }
+
+    .sidebar-footer {
+      margin-top: auto;
+      padding-top: 24px;
+      border-top: 1px solid var(--line);
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--ink-3);
+      line-height: 1.7;
+    }
+
+    /* ─── MAIN ───────────────────────────────── */
+    main {
+      padding: 80px 80px 140px;
+      min-width: 0; /* prevent grid blowout */
+    }
+
+    /* ─── HERO ───────────────────────────────── */
+    .hero {
+      margin-bottom: 96px;
+      padding-bottom: 64px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .hero-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--accent);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 28px;
+      padding: 6px 12px;
+      border: 1px solid var(--accent-line);
+      border-radius: 100px;
+      background: var(--accent-dim);
+    }
+
+    .hero-eyebrow span { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); display: block; }
+
+    h1.hero-title {
+      font-family: var(--serif);
+      font-size: clamp(44px, 6.5vw, 80px);
+      font-weight: 400;
+      line-height: 1.0;
+      letter-spacing: -0.03em;
+      margin-bottom: 22px;
+      color: var(--ink);
+    }
+
+    h1.hero-title em {
+      font-style: italic;
+      color: var(--accent);
+    }
+
+    .hero-sub {
+      font-size: 17px;
+      color: var(--ink-2);
+      max-width: 68ch;
+      line-height: 1.7;
+      margin-bottom: 56px;
+    }
+
+    .hero-stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1px;
+      background: var(--line);
+      border: 1px solid var(--line);
+      border-radius: var(--r);
+      overflow: hidden;
+    }
+
+    .stat {
+      background: var(--bg-1);
+      padding: 22px 20px;
+    }
+
+    .stat-n {
+      font-family: var(--serif);
+      font-size: 34px;
+      color: var(--accent);
+      line-height: 1;
+      margin-bottom: 4px;
+      font-style: italic;
+    }
+
+    .stat-l {
+      font-size: 11px;
+      color: var(--ink-3);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-weight: 500;
+    }
+
+    /* ─── SECTIONS ───────────────────────────── */
+    .section {
+      margin-bottom: 96px;
+      scroll-margin-top: 48px;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: baseline;
+      gap: 20px;
+      margin-bottom: 28px;
+      padding-bottom: 18px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .section-index {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--accent);
+      letter-spacing: 0.08em;
+    }
+
+    h2.section-title {
+      font-family: var(--serif);
+      font-size: 40px;
+      font-weight: 400;
+      letter-spacing: -0.025em;
+      line-height: 1.05;
+      color: var(--ink);
+    }
+
+    .section-lead {
+      font-size: 16px;
+      color: var(--ink-2);
+      max-width: 76ch;
+      line-height: 1.7;
+      margin-bottom: 36px;
+    }
+
+    h3.sub {
+      font-family: var(--serif);
+      font-size: 24px;
+      font-weight: 400;
+      letter-spacing: -0.015em;
+      margin: 52px 0 18px;
+      color: var(--ink);
+    }
+
+    .label {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: var(--accent);
+      margin: 32px 0 14px;
+    }
+
+    /* ─── PIPELINE STAGES ────────────────────── */
+    .pipeline {
+      border: 1px solid var(--line);
+      border-radius: var(--r);
+      overflow: hidden;
+      margin: 32px 0;
+    }
+
+    .pipeline-header {
+      background: var(--bg-1);
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--line);
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--ink-3);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .pipeline-body {
+      padding: 0;
+    }
+
+    /* vertical stage rows */
+    .pipe-stage {
+      display: grid;
+      grid-template-columns: 44px 1fr;
+      align-items: stretch;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .pipe-stage:last-child { border-bottom: none; }
+
+    .pipe-stage-num {
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding-top: 18px;
+      border-right: 1px solid var(--line);
+      background: var(--bg-1);
+      position: relative;
+    }
+
+    .pipe-stage-num span {
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--accent);
+      letter-spacing: 0.04em;
+    }
+
+    /* vertical connector line through all stages */
+    .pipe-stage-num::after {
+      content: "";
+      position: absolute;
+      bottom: -1px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 1px;
+      height: 16px;
+      background: var(--accent-line);
+    }
+
+    .pipe-stage:last-child .pipe-stage-num::after { display: none; }
+
+    .pipe-stage-content {
+      padding: 16px 20px;
+      background: var(--bg-1);
+    }
+
+    .pipe-stage.highlighted .pipe-stage-content {
+      background: var(--accent-dim);
+    }
+
+    .pipe-stage-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--ink);
+      margin-bottom: 4px;
+      line-height: 1.3;
+    }
+
+    .pipe-stage-desc {
+      font-size: 12px;
+      color: var(--ink-2);
+      line-height: 1.55;
+    }
+
+    .pipe-stage-desc code {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--accent);
+      background: var(--accent-dim);
+      border: 1px solid var(--accent-line);
+      padding: 1px 5px;
+      border-radius: 3px;
+    }
+
+    /* branch block inside pipeline for the fork */
+    .pipe-fork {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1px;
+      background: var(--line);
+      margin: 0;
+    }
+
+    .pipe-fork-side {
+      padding: 16px 20px;
+      background: var(--bg-1);
+    }
+
+    .pipe-fork-side.active { background: var(--accent-dim); }
+
+    .pipe-fork-label {
+      font-family: var(--mono);
+      font-size: 9.5px;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 5px;
+    }
+
+    .pipe-fork-label.muted { color: var(--ink-3); }
+
+    .pipe-fork-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--ink);
+      margin-bottom: 3px;
+    }
+
+    .pipe-fork-desc {
+      font-size: 12px;
+      color: var(--ink-2);
+      line-height: 1.5;
+    }
+
+    /* ─── CARD GRIDS ─────────────────────────── */
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1px;
+      background: var(--line);
+      border: 1px solid var(--line);
+      border-radius: var(--r);
+      overflow: hidden;
+      margin: 24px 0;
+    }
+
+    .card {
+      background: var(--bg-1);
+      padding: 22px 22px;
+    }
+
+    .card-eyebrow {
+      font-family: var(--mono);
+      font-size: 9.5px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--accent);
+      margin-bottom: 10px;
+    }
+
+    .card-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--ink);
+      margin-bottom: 8px;
+      line-height: 1.3;
+    }
+
+    .card-body {
+      font-size: 13px;
+      color: var(--ink-2);
+      line-height: 1.6;
+    }
+
+    /* ─── SITE TABLE ─────────────────────────── */
+    .site-table {
+      width: 100%;
+      border-collapse: collapse;
+      border: 1px solid var(--line);
+      border-radius: var(--r);
+      overflow: hidden;
+      margin: 24px 0;
+      font-size: 13px;
+    }
+
+    .site-table th {
+      background: var(--bg-1);
+      padding: 12px 16px;
+      text-align: left;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--ink-3);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .site-table td {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line);
+      color: var(--ink);
+      vertical-align: top;
+      line-height: 1.5;
+    }
+
+    .site-table tr:last-child td { border-bottom: none; }
+    .site-table tr:hover td { background: var(--bg); }
+
+    .site-table td:first-child {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--ink-2);
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 9px;
+      border-radius: 100px;
+      font-family: var(--mono);
+      font-size: 9.5px;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+    }
+
+    .badge-js    { background: #FEF3C7; color: #92400E; border: 1px solid #FDE68A; }
+    .badge-static{ background: #D1FAE5; color: #065F46; border: 1px solid #6EE7B7; }
+    .badge-hi    { background: #FEE2E2; color: #991B1B; border: 1px solid #FECACA; }
+    .badge-med   { background: #FEF3C7; color: #92400E; border: 1px solid #FDE68A; }
+    .badge-lo    { background: #D1FAE5; color: #065F46; border: 1px solid #6EE7B7; }
+
+    /* ─── INLINE LIST ────────────────────────── */
+    .ilist {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      margin: 20px 0;
+    }
+
+    .ilist li {
+      padding: 11px 0 11px 24px;
+      position: relative;
+      font-size: 14px;
+      color: var(--ink);
+      border-bottom: 1px solid var(--line);
+      line-height: 1.6;
+    }
+
+    .ilist li:last-child { border-bottom: none; }
+
+    .ilist li::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 20px;
+      width: 10px;
+      height: 1px;
+      background: var(--accent);
+    }
+
+    .ilist li strong { color: var(--accent); font-weight: 600; }
+
+    /* ─── FILTER LAYERS ──────────────────────── */
+    .filter-layers {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+      border: 1px solid var(--line);
+      border-radius: var(--r);
+      overflow: hidden;
+      margin: 24px 0;
+    }
+
+    .filter-layer {
+      display: grid;
+      grid-template-columns: 200px 1fr auto;
+      align-items: start;
+      gap: 24px;
+      padding: 16px 20px;
+      background: var(--bg-1);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .filter-layer:last-child { border-bottom: none; }
+
+    .fl-num {
+      font-family: var(--mono);
+      font-size: 9.5px;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 4px;
+    }
+
+    .fl-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--ink);
+    }
+
+    .fl-desc {
+      font-size: 12px;
+      color: var(--ink-2);
+      line-height: 1.55;
+    }
+
+    .fl-kills {
+      font-size: 11px;
+      color: var(--ink-3);
+      font-style: italic;
+      text-align: right;
+      min-width: 140px;
+    }
+
+    /* ─── DECISION TABLE ─────────────────────── */
+    .decision-matrix {
+      width: 100%;
+      border-collapse: collapse;
+      border: 1px solid var(--line);
+      border-radius: var(--r);
+      overflow: hidden;
+      font-size: 13px;
+      margin: 24px 0;
+    }
+
+    .decision-matrix th {
+      background: var(--bg-1);
+      padding: 12px 16px;
+      text-align: left;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--ink-3);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .decision-matrix td {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+      line-height: 1.5;
+      color: var(--ink);
+    }
+
+    .decision-matrix tr:last-child td { border-bottom: none; }
+    .decision-matrix tr:hover td { background: var(--bg); }
+
+    .tick { color: var(--green); font-size: 12px; }
+    .cross { color: var(--red);  font-size: 12px; }
+
+    /* ─── SCREENSHOT PLACEHOLDER ─────────────── */
+    .screenshot-wrap {
+      margin: 44px 0;
+    }
+
+    .screenshot-label {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--ink-3);
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .screenshot-label::after {
+      content: "";
+      flex: 1;
+      height: 1px;
+      background: var(--line);
+    }
+
+    .macbook-frame {
+      background: #E8E8F2;
+      border: 1px solid var(--line-2);
+      border-radius: 12px;
+      overflow: hidden;
+      position: relative;
+      box-shadow: 0 4px 24px rgba(108,99,255,0.08), 0 1px 4px rgba(0,0,0,0.06);
+    }
+
+    .macbook-bar {
+      height: 38px;
+      background: #E9E9F4;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      gap: 7px;
+      flex-shrink: 0;
+    }
+
+    .mac-dot {
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+    }
+
+    .mac-dot.r { background: #FF5F57; }
+    .mac-dot.y { background: #FEBC2E; }
+    .mac-dot.g { background: #28C840; }
+
+    .mac-url {
+      flex: 1;
+      height: 22px;
+      background: #EEEEF6;
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      margin: 0 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .mac-url span {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--ink-3);
+    }
+
+    /* 16:10 MacBook ratio */
+    .macbook-screen {
+      aspect-ratio: 16 / 10;
+      background:
+        repeating-linear-gradient(
+          0deg,
+          transparent,
+          transparent 39px,
+          var(--line) 39px,
+          var(--line) 40px
+        ),
+        repeating-linear-gradient(
+          90deg,
+          transparent,
+          transparent 39px,
+          var(--line) 39px,
+          var(--line) 40px
+        ),
+        #FFFFFF;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      position: relative;
+    }
+
+    .screen-placeholder-icon {
+      width: 48px;
+      height: 48px;
+      border: 1px solid var(--line-2);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--accent-dim);
+    }
+
+    .screen-placeholder-icon svg { width: 22px; height: 22px; color: var(--accent); }
+
+    .screen-placeholder-text {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--ink-2);
+      letter-spacing: 0.06em;
+      font-weight: 500;
+    }
+
+    .screen-placeholder-sub {
+      font-size: 11px;
+      color: var(--ink-3);
+    }
+
+    .screenshot-caption {
+      font-size: 12px;
+      color: var(--ink-3);
+      margin-top: 10px;
+      text-align: center;
+      font-style: italic;
+    }
+
+    /* ─── STACK TABLE ────────────────────────── */
+    .stack-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+      border: 1px solid var(--line);
+      border-radius: var(--r);
+      overflow: hidden;
+      margin: 24px 0;
+    }
+
+    .stack-row {
+      display: grid;
+      grid-template-columns: 130px 160px 1fr;
+      align-items: start;
+      gap: 0;
+      background: var(--bg-1);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .stack-row:last-child { border-bottom: none; }
+
+    .stack-row > div {
+      padding: 14px 16px;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .stack-row > div:not(:last-child) {
+      border-right: 1px solid var(--line);
+    }
+
+    .stack-row .layer {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    .stack-row .choice {
+      font-weight: 600;
+      color: var(--ink);
+    }
+
+    .stack-row .reason {
+      color: var(--ink-2);
+    }
+
+    /* ─── TIMELINE ───────────────────────────── */
+    .timeline {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      background: var(--line);
+      border: 1px solid var(--line);
+      border-radius: var(--r);
+      overflow: hidden;
+      margin: 24px 0;
+    }
+
+    .tl-phase {
+      background: var(--bg-1);
+      padding: 22px 20px;
+    }
+
+    .tl-phase-label {
+      font-family: var(--mono);
+      font-size: 9.5px;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      margin-bottom: 6px;
+    }
+
+    .tl-phase-name {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--ink);
+      margin-bottom: 16px;
+      line-height: 1.3;
+    }
+
+    .tl-tasks {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .tl-tasks li {
+      font-size: 12px;
+      color: var(--ink-2);
+      padding-left: 14px;
+      position: relative;
+      line-height: 1.45;
+    }
+
+    .tl-tasks li::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 7px;
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      border: 1px solid var(--accent);
+    }
+
+    /* ─── CALLOUT ────────────────────────────── */
+    .callout {
+      border: 1px solid var(--accent-line);
+      border-left: 3px solid var(--accent);
+      border-radius: var(--r);
+      background: var(--accent-dim);
+      padding: 18px 22px;
+      margin: 28px 0;
+    }
+
+    .callout-label {
+      font-family: var(--mono);
+      font-size: 9.5px;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      margin-bottom: 8px;
+    }
+
+    .callout p {
+      font-size: 14px;
+      color: var(--ink-2);
+      line-height: 1.65;
+    }
+
+    .callout strong { color: var(--ink); font-weight: 600; }
+
+    /* ─── CODE BLOCK ─────────────────────────── */
+    .code-block {
+      border: 1px solid var(--line);
+      border-radius: var(--r);
+      overflow: hidden;
+      margin: 24px 0;
+    }
+
+    .code-block-header {
+      background: var(--bg-1);
+      border-bottom: 1px solid var(--line);
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .code-block-header span {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--ink-3);
+      letter-spacing: 0.06em;
+    }
+
+    .code-lang {
+      margin-left: auto;
+      font-family: var(--mono);
+      font-size: 9px;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      border: 1px solid var(--accent-line);
+      padding: 2px 7px;
+      border-radius: 3px;
+      background: var(--accent-dim);
+    }
+
+    pre {
+      background: #F0F0F9;
+      border-top: 1px solid var(--line);
+      padding: 20px 22px;
+      overflow-x: auto;
+    }
+
+    code {
+      font-family: var(--mono);
+      font-size: 12.5px;
+      line-height: 1.75;
+      color: var(--ink-2);
+    }
+
+    code .k  { color: var(--accent); }
+    code .s  { color: var(--green); }
+    code .c  { color: var(--ink-3); font-style: italic; }
+    code .t  { color: #B45309; }
+
+    /* ─── FOOTER ─────────────────────────────── */
+    footer {
+      margin-top: 120px;
+      padding-top: 32px;
+      border-top: 1px solid var(--line);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .footer-l {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--ink-3);
+    }
+
+    .footer-r {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--ink-3);
+    }
+
+    /* ─── RESPONSIVE ─────────────────────────── */
+    @media (max-width: 900px) {
+      .shell { grid-template-columns: 1fr; }
+      .sidebar { position: relative; height: auto; border-right: none; border-bottom: 1px solid var(--line); }
+      main { padding: 48px 28px 80px; }
+      .hero-stats { grid-template-columns: repeat(2, 1fr); }
+      .timeline { grid-template-columns: 1fr; }
+      .filter-layer { grid-template-columns: 1fr; gap: 8px; }
+      .stack-row { grid-template-columns: 1fr; }
+      .stack-row > div:not(:last-child) { border-right: none; border-bottom: 1px solid var(--line); }
+    }
+
+    *:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 3px; }
+    ::selection { background: var(--accent); color: #FFFFFF; }
+
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    p { color: var(--ink-2); font-size: 14px; line-height: 1.7; margin-bottom: 14px; }
+    p:last-child { margin-bottom: 0; }
+  </style>
+</head>
+
+<body>
+<div class="shell">
+
+  <!-- ═══ SIDEBAR ═══════════════════════════════════════ -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M12 2a10 10 0 0 1 10 10 10 10 0 0 1-10 10A10 10 0 0 1 2 12 10 10 0 0 1 12 2"/>
+          <path d="M12 6v6l4 2"/>
+        </svg>
+      </div>
+      <span class="brand-name">VisaWatch</span>
+      <span class="brand-version">v0.1</span>
+    </div>
+
+    <div class="nav-group-label">Overview</div>
+    <a class="nav-item" href="#overview"><span class="nav-dot"></span>What is VisaWatch</a>
+    <a class="nav-item" href="#problem"><span class="nav-dot"></span>Problem Statement</a>
+    <a class="nav-item" href="#sites"><span class="nav-dot"></span>Monitored Sites</a>
+
+    <div class="nav-group-label">Architecture</div>
+    <a class="nav-item" href="#pipeline"><span class="nav-dot"></span>Detection Pipeline</a>
+    <a class="nav-item" href="#adapters"><span class="nav-dot"></span>Site Adapters</a>
+    <a class="nav-item" href="#filters"><span class="nav-dot"></span>Filter Layers</a>
+    <a class="nav-item" href="#ai"><span class="nav-dot"></span>AI Classification</a>
+
+    <div class="nav-group-label">Product</div>
+    <a class="nav-item" href="#dashboard"><span class="nav-dot"></span>Dashboard</a>
+    <a class="nav-item" href="#email"><span class="nav-dot"></span>Email Alerts</a>
+    <a class="nav-item" href="#stack"><span class="nav-dot"></span>Tech Stack</a>
+    <a class="nav-item" href="#rollout"><span class="nav-dot"></span>Rollout</a>
+
+    <div class="sidebar-footer">
+      VisaWatch · Internal Docs<br />
+      April 2026 · Draft
+    </div>
+  </aside>
+
+  <!-- ═══ MAIN ══════════════════════════════════════════ -->
+  <main>
+
+    <!-- HERO -->
+    <header class="hero" id="overview">
+      <div class="hero-eyebrow">
+        <span></span>
+        Internal documentation
+      </div>
+      <h1 class="hero-title">
+        Visa policy changes,<br /><em>caught automatically.</em>
+      </h1>
+      <p class="hero-sub">
+        VisaWatch continuously monitors embassy and visa authority websites, filters noise with
+        three pre-AI layers, then uses an LLM to decide whether a change is meaningful enough to
+        alert you — so you only hear about policy updates, fee changes, and appointment availability
+        shifts, never cosmetic noise.
+      </p>
+
+      <div class="hero-stats">
+        <div class="stat">
+          <div class="stat-n">5</div>
+          <div class="stat-l">Sites monitored</div>
+        </div>
+        <div class="stat">
+          <div class="stat-n">15m</div>
+          <div class="stat-l">Poll interval</div>
+        </div>
+        <div class="stat">
+          <div class="stat-n">3</div>
+          <div class="stat-l">Pre-AI filters</div>
+        </div>
+        <div class="stat">
+          <div class="stat-n">&lt;5%</div>
+          <div class="stat-l">LLM call rate</div>
+        </div>
+      </div>
+    </header>
+
+    <!-- ── 01 PROBLEM ───────────────────────────────── -->
+    <section class="section" id="problem">
+      <div class="section-header">
+        <span class="section-index">01</span>
+        <h2 class="section-title">Problem Statement</h2>
+      </div>
+      <p class="section-lead">
+        Visa processing rules, fees, and appointment availability change with little or no notice.
+        Currently the only way to stay current is manual, periodic checking of every relevant portal.
+      </p>
+
+      <ul class="ilist">
+        <li><strong>Manual effort —</strong> Staff must open each URL individually and compare against memory of what it previously said</li>
+        <li><strong>Latency —</strong> A policy change published on a Monday morning may not be noticed until Friday, causing incorrect advice to clients in the interim</li>
+        <li><strong>Scale —</strong> Five URLs is the seed; the real list grows. Manual checking does not scale</li>
+        <li><strong>No audit trail —</strong> There is currently no record of when a change occurred or what exactly changed, only that something is different</li>
+        <li><strong>Noise fatigue —</strong> Any naive alerting system (e.g. cron + curl + diff) would produce hundreds of false positives per day from CDN timestamps, cookie banners, and A/B test variants</li>
+      </ul>
+
+      <div class="callout">
+        <div class="callout-label">Goal</div>
+        <p>
+          A single dashboard that shows all five sites in one place, highlights meaningful changes
+          with AI-generated summaries, maintains a full history of every change detected, and sends
+          a <strong>well-formatted email</strong> when something actually matters — with zero false
+          positives surviving into your inbox.
+        </p>
+      </div>
+    </section>
+
+    <!-- ── 02 SITES ─────────────────────────────────── -->
+    <section class="section" id="sites">
+      <div class="section-header">
+        <span class="section-index">02</span>
+        <h2 class="section-title">Monitored Sites</h2>
+      </div>
+      <p class="section-lead">
+        Each site requires a hand-tuned adapter that knows where meaningful content lives, what
+        render mode is needed, and how frequently to poll. The table below is the seed configuration.
+      </p>
+
+      <table class="site-table">
+        <thead>
+          <tr>
+            <th>URL</th>
+            <th>Authority</th>
+            <th>Render</th>
+            <th>Poll</th>
+            <th>Noise Risk</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>in.usembassy.gov/mumbai/</td>
+            <td>US Embassy Mumbai — visa news, fee tables, appointment notices</td>
+            <td><span class="badge badge-static">Static</span></td>
+            <td>30 min</td>
+            <td><span class="badge badge-lo">Low</span></td>
+          </tr>
+          <tr>
+            <td>visa.vfsglobal.com/are/en/sgp/apply-visa</td>
+            <td>VFS Global UAE→Singapore — appointment slots, document requirements</td>
+            <td><span class="badge badge-js">JS</span></td>
+            <td>15 min</td>
+            <td><span class="badge badge-hi">High</span></td>
+          </tr>
+          <tr>
+            <td>www.gov.uk/standard-visitor/…</td>
+            <td>UK Home Office — Standard Visitor Visa requirements and fees</td>
+            <td><span class="badge badge-static">Static</span></td>
+            <td>1 hr</td>
+            <td><span class="badge badge-lo">Low</span></td>
+          </tr>
+          <tr>
+            <td>www.vfsglobal.com/en/individuals/index.html</td>
+            <td>VFS Global global landing — announcement banner, country portal links</td>
+            <td><span class="badge badge-js">JS</span></td>
+            <td>15 min</td>
+            <td><span class="badge badge-hi">High</span></td>
+          </tr>
+          <tr>
+            <td>www.ica.gov.sg/</td>
+            <td>Singapore ICA — pass and visa announcements, news feed</td>
+            <td><span class="badge badge-static">Static</span></td>
+            <td>30 min</td>
+            <td><span class="badge badge-med">Medium</span></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="callout">
+        <div class="callout-label">VFS noise note</div>
+        <p>
+          VFS Global sites are notoriously noisy — session tokens, real-time slot counters, CDN
+          variant headers, and regional A/B tests all mutate the DOM on every render.
+          The <strong>adapter selector must target the announcement region only</strong> — not the
+          booking widget — and strip patterns must be aggressive. A two-poll stability window is
+          mandatory for both VFS adapters before any diff is escalated.
+        </p>
+      </div>
+    </section>
+
+    <!-- ── 03 PIPELINE ──────────────────────────────── -->
+    <section class="section" id="pipeline">
+      <div class="section-header">
+        <span class="section-index">03</span>
+        <h2 class="section-title">Detection Pipeline</h2>
+      </div>
+      <p class="section-lead">
+        Every poll traverses the same stages. The LLM is the last gate, not the first — by the
+        time a diff reaches it, all obvious noise has been discarded.
+      </p>
+
+      <div class="pipeline">
+        <div class="pipeline-header">Full pipeline · one tick per site per poll cycle</div>
+        <div class="pipeline-body">
+
+          <div class="pipe-stage">
+            <div class="pipe-stage-num"><span>01</span></div>
+            <div class="pipe-stage-content">
+              <div class="pipe-stage-title">Scheduler</div>
+              <div class="pipe-stage-desc">Inngest cron fires at the interval defined per adapter — 15 min for VFS, 30 min for embassies, 1 hr for gov.uk.</div>
+            </div>
+          </div>
+
+          <div class="pipe-stage">
+            <div class="pipe-stage-num"><span>02</span></div>
+            <div class="pipe-stage-content">
+              <div class="pipe-stage-title">Fetcher</div>
+              <div class="pipe-stage-desc"><code>renderMode: 'static'</code> → native <code>fetch()</code> for speed. <code>renderMode: 'js'</code> → headless Playwright to fully execute JavaScript before extracting HTML.</div>
+            </div>
+          </div>
+
+          <div class="pipe-stage">
+            <div class="pipe-stage-num"><span>03</span></div>
+            <div class="pipe-stage-content">
+              <div class="pipe-stage-title">Scope + Strip</div>
+              <div class="pipe-stage-desc">Apply the adapter's <code>contentSelector</code> to isolate the meaningful region. Run all <code>stripPatterns</code> to remove session tokens, timestamps, counters, and cookie banners. Normalise whitespace.</div>
+            </div>
+          </div>
+
+          <div class="pipe-stage">
+            <div class="pipe-stage-num"><span>04</span></div>
+            <div class="pipe-stage-content">
+              <div class="pipe-stage-title">Hash Check — Filter 1</div>
+              <div class="pipe-stage-desc">SHA-256 the cleaned text and compare to the last stored snapshot hash. <strong style="color:var(--ink)">Identical → stop here.</strong> No diff, no LLM, no write. Eliminates the vast majority of polls on quiet days.</div>
+            </div>
+          </div>
+
+          <div class="pipe-stage">
+            <div class="pipe-stage-num"><span>05</span></div>
+            <div class="pipe-stage-content">
+              <div class="pipe-stage-title">Min-diff Threshold — Filter 2</div>
+              <div class="pipe-stage-desc">Generate a character-level text diff. If total added + removed chars &lt; <code>minDiffChars</code> (default 40), treat as noise and stop. Kills micro-edits, whitespace drift, single-character corrections.</div>
+            </div>
+          </div>
+
+          <div class="pipe-stage">
+            <div class="pipe-stage-num"><span>06</span></div>
+            <div class="pipe-stage-content">
+              <div class="pipe-stage-title">Stability Window — Filter 3</div>
+              <div class="pipe-stage-desc">Record the diff in <code>pending_changes</code> with a pass counter. The change must survive <code>stabilityPasses</code> consecutive polls (default 2, VFS = 3) before escalating. Eliminates CDN flicker, A/B test variants, and transient cache misses.</div>
+            </div>
+          </div>
+
+          <div class="pipe-stage highlighted">
+            <div class="pipe-stage-num"><span>07</span></div>
+            <div class="pipe-stage-content">
+              <div class="pipe-stage-title">LLM Classification</div>
+              <div class="pipe-stage-desc">GPT-4o-mini receives the site label, URL, and extracted text diff (not raw HTML). Returns structured JSON: <code>category</code>, <code>severity 1–5</code>, <code>summary</code>, <code>confidence 0–1</code>. Called on &lt;5% of all polls.</div>
+            </div>
+          </div>
+
+          <div class="pipe-stage" style="border-bottom:none;">
+            <div class="pipe-stage-num"><span>08</span></div>
+            <div class="pipe-stage-content" style="padding:0;">
+              <div class="pipe-fork">
+                <div class="pipe-fork-side active">
+                  <div class="pipe-fork-label">severity ≥ 3 · confidence ≥ 0.7</div>
+                  <div class="pipe-fork-title">Alert + Store</div>
+                  <div class="pipe-fork-desc">Write to Postgres. Send email via Resend with AI summary, diff snippet, and deep link to dashboard.</div>
+                </div>
+                <div class="pipe-fork-side">
+                  <div class="pipe-fork-label muted">severity 1–2 or low confidence</div>
+                  <div class="pipe-fork-title">Store Only</div>
+                  <div class="pipe-fork-desc">Logged in Postgres and visible on the dashboard for manual review. No email sent.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- SCREENSHOT 1 — Dashboard overview -->
+      <div class="screenshot-wrap">
+        <div class="screenshot-label">Figure 1 — Dashboard overview</div>
+        <div class="macbook-frame">
+          <div class="macbook-bar">
+            <div class="mac-dot r"></div>
+            <div class="mac-dot y"></div>
+            <div class="mac-dot g"></div>
+            <div class="mac-url">
+              <span>localhost:3000 — VisaWatch Dashboard</span>
+            </div>
+          </div>
+          <div class="macbook-screen">
+            <div class="screen-placeholder-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                <path d="M3 9h18M9 21V9"/>
+              </svg>
+            </div>
+            <div class="screen-placeholder-text">Screenshot · Dashboard main view</div>
+            <div class="screen-placeholder-sub">All sites · recent alerts · severity feed</div>
+          </div>
+        </div>
+        <div class="screenshot-caption">
+          Main dashboard — all five sites at a glance, latest detected changes, severity indicators,
+          and one-line AI summaries without opening any individual site.
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ── 04 ADAPTERS ──────────────────────────────── -->
+    <section class="section" id="adapters">
+      <div class="section-header">
+        <span class="section-index">04</span>
+        <h2 class="section-title">Site Adapters</h2>
+      </div>
+      <p class="section-lead">
+        Each site has a small typed adapter object. The adapter is the only place that knows
+        site-specific details — the pipeline itself is generic.
+      </p>
+
+      <div class="code-block">
+        <div class="code-block-header">
+          <span>adapter interface</span>
+          <span class="code-lang">TypeScript</span>
+        </div>
+        <pre><code><span class="k">interface</span> <span class="t">SiteAdapter</span> {
+  id:              <span class="t">string</span>           <span class="c">// unique slug, e.g. "vfs-are-sgp"</span>
+  url:             <span class="t">string</span>           <span class="c">// canonical URL to fetch</span>
+  label:           <span class="t">string</span>           <span class="c">// human-readable name for UI</span>
+  renderMode:      <span class="s">'static'</span> | <span class="s">'js'</span>  <span class="c">// fetch() vs Playwright</span>
+  contentSelector: <span class="t">string</span>           <span class="c">// CSS selector of meaningful region</span>
+  stripPatterns:   <span class="t">RegExp</span>[]         <span class="c">// noise patterns to remove before hashing</span>
+  pollIntervalMin: <span class="t">number</span>           <span class="c">// cron cadence in minutes</span>
+  stabilityPasses: <span class="t">number</span>           <span class="c">// consecutive polls change must survive</span>
+  minDiffChars:    <span class="t">number</span>           <span class="c">// ignore diffs smaller than this</span>
+}</code></pre>
+      </div>
+
+      <div class="callout">
+        <div class="callout-label">One-time AI bootstrap</div>
+        <p>
+          When onboarding a new site, we feed the fully-rendered HTML to GPT-4o once with the
+          prompt <em>"Where on this page would visa policy changes, fee changes, or appointment
+          availability changes appear? Return a CSS selector for that region and a list of
+          regex patterns to strip before change-detection (session IDs, timestamps, counters)."</em>
+          The output is reviewed, saved as the adapter, and never re-generated unless the site
+          redesigns. <strong>AI bootstraps the config once; all subsequent monitoring is
+          deterministic.</strong>
+        </p>
+      </div>
+    </section>
+
+    <!-- ── 05 FILTERS ──────────────────────────────── -->
+    <section class="section" id="filters">
+      <div class="section-header">
+        <span class="section-index">05</span>
+        <h2 class="section-title">Filter Layers</h2>
+      </div>
+      <p class="section-lead">
+        Three deterministic filters run before any LLM call. Together they eliminate &gt;95% of
+        all diffs, keeping OpenAI token spend near zero for quiet periods.
+      </p>
+
+      <div class="filter-layers">
+        <div class="filter-layer">
+          <div>
+            <div class="fl-num">Layer 1</div>
+            <div class="fl-name">Scope + Strip</div>
+          </div>
+          <div class="fl-desc">
+            Apply the adapter's CSS selector to extract only the meaningful content region.
+            Run all strip regexes to remove session tokens, CSRF fields, timestamps of the form
+            <code>HH:MM:SS</code>, view counters, and cookie-consent markup.
+            Normalise all whitespace. Hash the result (SHA-256).
+            If hash matches the previous snapshot — stop, no diff.
+          </div>
+          <div class="fl-kills">Kills header / footer / sidebar / ad churn</div>
+        </div>
+        <div class="filter-layer">
+          <div>
+            <div class="fl-num">Layer 2</div>
+            <div class="fl-name">Min-diff threshold</div>
+          </div>
+          <div class="fl-desc">
+            Compute a character-level diff of the cleaned text (not raw HTML).
+            If the total added + removed character count is below the adapter's
+            <code>minDiffChars</code> setting (default 40), treat as noise and stop.
+            This kills single-character typo corrections, whitespace-only changes,
+            and tiny widget state mutations.
+          </div>
+          <div class="fl-kills">Kills micro-edits, whitespace drift</div>
+        </div>
+        <div class="filter-layer">
+          <div>
+            <div class="fl-num">Layer 3</div>
+            <div class="fl-name">Stability window</div>
+          </div>
+          <div class="fl-desc">
+            Record the diff in a <code>pending_changes</code> table with a
+            <code>passes</code> counter. On the next poll, if the same diff is still
+            present, increment. Only when <code>passes ≥ stabilityPasses</code> (default 2,
+            set to 3 for VFS) does the diff graduate to the LLM stage.
+            Transient CDN variants, server-side A/B tests, and stale cache flushes all
+            disappear before the next poll.
+          </div>
+          <div class="fl-kills">Kills flicker, CDN variants, A/B tests</div>
+        </div>
+      </div>
+
+      <h3 class="sub">What each scenario looks like end-to-end</h3>
+
+      <table class="decision-matrix">
+        <thead>
+          <tr>
+            <th>Scenario</th>
+            <th>Survives filters?</th>
+            <th>LLM verdict</th>
+            <th>Email?</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Button label "Apply Now" → "Apply now"</td>
+            <td><span class="cross">✗ Layer 2</span></td>
+            <td>—</td>
+            <td><span class="cross">No</span></td>
+          </tr>
+          <tr>
+            <td>VFS slot counter increments</td>
+            <td><span class="cross">✗ Layer 1</span></td>
+            <td>—</td>
+            <td><span class="cross">No</span></td>
+          </tr>
+          <tr>
+            <td>Site briefly serves stale HTML, recovers next poll</td>
+            <td><span class="cross">✗ Layer 3</span></td>
+            <td>—</td>
+            <td><span class="cross">No</span></td>
+          </tr>
+          <tr>
+            <td>News section reorders existing items</td>
+            <td><span class="tick">✓ all 3</span></td>
+            <td>cosmetic · sev 1</td>
+            <td><span class="cross">No</span></td>
+          </tr>
+          <tr>
+            <td>New paragraph: "From May 1 fee increases to $X"</td>
+            <td><span class="tick">✓ all 3</span></td>
+            <td>fee_change · sev 4</td>
+            <td><span class="tick">Yes</span></td>
+          </tr>
+          <tr>
+            <td>New news item added to ICA announcement list</td>
+            <td><span class="tick">✓ all 3</span></td>
+            <td>policy_change · sev 4</td>
+            <td><span class="tick">Yes</span></td>
+          </tr>
+          <tr>
+            <td>Appointment booking reopens after suspension</td>
+            <td><span class="tick">✓ all 3</span></td>
+            <td>appointment · sev 5</td>
+            <td><span class="tick">Yes</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- ── 06 AI CLASSIFICATION ─────────────────────── -->
+    <section class="section" id="ai">
+      <div class="section-header">
+        <span class="section-index">06</span>
+        <h2 class="section-title">AI Classification</h2>
+      </div>
+      <p class="section-lead">
+        Only diffs that survive all three filter layers reach the LLM. The model's job is to
+        classify the change and summarise it — not to decide whether the page changed.
+      </p>
+
+      <div class="card-grid">
+        <div class="card">
+          <div class="card-eyebrow">Model</div>
+          <div class="card-title">GPT-4o-mini</div>
+          <div class="card-body">Default for all classification. Cheap, fast, structured output. Reserve GPT-4o for confidence &lt; 0.6 cases requiring a second pass.</div>
+        </div>
+        <div class="card">
+          <div class="card-eyebrow">Output format</div>
+          <div class="card-title">Structured JSON</div>
+          <div class="card-body">category, severity 1–5, one-line summary, confidence 0–1. Parsed directly into Postgres. No free-form text in the critical path.</div>
+        </div>
+        <div class="card">
+          <div class="card-eyebrow">Trigger threshold</div>
+          <div class="card-title">sev ≥ 3 + conf ≥ 0.7</div>
+          <div class="card-body">Both conditions must be true for an email to fire. Ambiguous low-confidence hits are stored on the dashboard for manual review.</div>
+        </div>
+        <div class="card">
+          <div class="card-eyebrow">Categories</div>
+          <div class="card-title">5 change types</div>
+          <div class="card-body">policy_change · fee_change · appointment_availability · cosmetic · navigation. Each maps to a colour and icon in the dashboard.</div>
+        </div>
+        <div class="card">
+          <div class="card-eyebrow">Cost discipline</div>
+          <div class="card-title">&lt; 5% of polls</div>
+          <div class="card-body">Three pre-AI layers mean the LLM is called on fewer than 1 in 20 polls on quiet sites. At $0.00015/1K tokens, even heavy usage stays under $2/month.</div>
+        </div>
+        <div class="card">
+          <div class="card-eyebrow">Prompt context</div>
+          <div class="card-title">Diff + site context</div>
+          <div class="card-body">The prompt includes the site label, URL, and the extracted text diff — not the raw HTML. Keeps token count low and reduces hallucination risk.</div>
+        </div>
+      </div>
+
+      <div class="code-block">
+        <div class="code-block-header">
+          <span>LLM response schema</span>
+          <span class="code-lang">TypeScript</span>
+        </div>
+        <pre><code><span class="k">interface</span> <span class="t">ClassificationResult</span> {
+  category:   <span class="s">'policy_change'</span> | <span class="s">'fee_change'</span> |
+              <span class="s">'appointment_availability'</span> | <span class="s">'cosmetic'</span> |
+              <span class="s">'navigation'</span> | <span class="s">'unknown'</span>
+  severity:   <span class="t">1</span> | <span class="t">2</span> | <span class="t">3</span> | <span class="t">4</span> | <span class="t">5</span>   <span class="c">// 1 = cosmetic, 5 = critical</span>
+  summary:    <span class="t">string</span>                  <span class="c">// one line, ≤ 120 chars</span>
+  confidence: <span class="t">number</span>                  <span class="c">// 0.0 – 1.0</span>
+}</code></pre>
+      </div>
+    </section>
+
+    <!-- ── 07 DASHBOARD ─────────────────────────────── -->
+    <section class="section" id="dashboard">
+      <div class="section-header">
+        <span class="section-index">07</span>
+        <h2 class="section-title">Dashboard</h2>
+      </div>
+      <p class="section-lead">
+        Built in Next.js with real-time updates via Server-Sent Events. Two views: the feed and
+        the per-site detail. No auth complexity needed for a single-user internal tool — protected
+        by a simple token-based route guard.
+      </p>
+
+      <h3 class="sub">Feed view</h3>
+      <ul class="ilist">
+        <li><strong>Status row per site —</strong> site name, last checked time, last change detected, current severity badge</li>
+        <li><strong>Alert stream —</strong> reverse-chronological list of all changes severity ≥ 3, with AI summary and diff preview</li>
+        <li><strong>Severity filter —</strong> filter feed by category or severity; all stored even if not alerted</li>
+        <li><strong>Live indicator —</strong> SSE-connected; new alerts appear without page refresh</li>
+      </ul>
+
+      <h3 class="sub">Per-site detail view</h3>
+      <ul class="ilist">
+        <li><strong>Change history —</strong> full timeline of every diff detected, cosmetic or otherwise, with timestamp</li>
+        <li><strong>Diff viewer —</strong> side-by-side or inline text diff of the content region before and after</li>
+        <li><strong>Snapshot access —</strong> link to the full stored HTML snapshot at any point in time (R2/S3)</li>
+        <li><strong>Adapter config —</strong> editable selector and strip patterns inline so you can tune without code deploys</li>
+      </ul>
+
+      <!-- SCREENSHOT 2 — Email preview -->
+      <div class="screenshot-wrap">
+        <div class="screenshot-label">Figure 2 — Email alert</div>
+        <div class="macbook-frame">
+          <div class="macbook-bar">
+            <div class="mac-dot r"></div>
+            <div class="mac-dot y"></div>
+            <div class="mac-dot g"></div>
+            <div class="mac-url">
+              <span>mail.google.com — VisaWatch Alert · ICA Singapore</span>
+            </div>
+          </div>
+          <div class="macbook-screen">
+            <div class="screen-placeholder-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                <polyline points="22,6 12,13 2,6"/>
+              </svg>
+            </div>
+            <div class="screen-placeholder-text">Screenshot · Email notification</div>
+            <div class="screen-placeholder-sub">Site name · category badge · AI summary · diff snippet · link to dashboard</div>
+          </div>
+        </div>
+        <div class="screenshot-caption">
+          Alert email — site name, change category, one-line AI summary, the exact text added or
+          removed, and a direct link to the dashboard diff view.
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ── 08 EMAIL ALERTS ──────────────────────────── -->
+    <section class="section" id="email">
+      <div class="section-header">
+        <span class="section-index">08</span>
+        <h2 class="section-title">Email Alerts</h2>
+      </div>
+      <p class="section-lead">
+        Sent via Resend. Each email is a React Email template rendered server-side at send time.
+        One email per alert event — no digest batching, since visa changes are time-sensitive.
+      </p>
+
+      <div class="label">Email structure</div>
+      <ul class="ilist">
+        <li><strong>Subject —</strong> <code>[VisaWatch] fee_change · VFS UAE→SGP · severity 4</code></li>
+        <li><strong>Site block —</strong> full name, URL, authority, timestamp of detection</li>
+        <li><strong>AI summary —</strong> one sentence written by the LLM, not a raw diff</li>
+        <li><strong>Change block —</strong> highlighted added text (green) and removed text (red), limited to the changed paragraphs</li>
+        <li><strong>Action link —</strong> deep link into the dashboard diff view for this exact change event</li>
+        <li><strong>Metadata footer —</strong> severity, confidence score, change category, poll cycle number</li>
+      </ul>
+
+      <div class="callout">
+        <div class="callout-label">Why not a daily digest?</div>
+        <p>
+          A daily digest trades immediacy for inbox cleanliness. For visa policy monitoring, a
+          fee change published at 9 AM that you only see at 5 PM may mean a full day of incorrect
+          advice to clients. <strong>Individual emails for severity ≥ 3 events</strong> preserves
+          the latency advantage of near-real-time monitoring.
+          Severity 1–2 events are only visible on the dashboard — they never email.
+        </p>
+      </div>
+    </section>
+
+    <!-- ── 09 STACK ─────────────────────────────────── -->
+    <section class="section" id="stack">
+      <div class="section-header">
+        <span class="section-index">09</span>
+        <h2 class="section-title">Tech Stack</h2>
+      </div>
+      <p class="section-lead">
+        Chosen for minimal moving parts while keeping the scraping worker fully separate from the
+        Next.js frontend — Vercel functions are not suitable for long-running Playwright sessions.
+      </p>
+
+      <div class="stack-list">
+        <div class="stack-row">
+          <div class="layer">Frontend</div>
+          <div class="choice">Next.js 15 · App Router</div>
+          <div class="reason">Dashboard UI, SSE endpoint for live feed updates, React Email template rendering. Hosted on Vercel.</div>
+        </div>
+        <div class="stack-row">
+          <div class="layer">Worker</div>
+          <div class="choice">Inngest</div>
+          <div class="reason">Durable cron-based job execution with built-in retries, step-level observability, and a generous free tier. Handles all scraping and pipeline jobs outside Vercel's 60 s function limit.</div>
+        </div>
+        <div class="stack-row">
+          <div class="layer">Scraping</div>
+          <div class="choice">fetch + Playwright</div>
+          <div class="reason">Static sites use native fetch for speed. JS-rendered sites (VFS) use Playwright with a headless Chromium instance managed in the Inngest worker.</div>
+        </div>
+        <div class="stack-row">
+          <div class="layer">Database</div>
+          <div class="choice">Postgres (Neon)</div>
+          <div class="reason">Change events, adapter config, snapshots metadata, and pending_changes stability tracking. Neon offers serverless autoscaling and a free tier sufficient for this workload.</div>
+        </div>
+        <div class="stack-row">
+          <div class="layer">Blob storage</div>
+          <div class="choice">Cloudflare R2</div>
+          <div class="reason">Full HTML snapshots stored as objects keyed by siteId + timestamp. R2 has no egress fees. 30-day retention policy via lifecycle rule.</div>
+        </div>
+        <div class="stack-row">
+          <div class="layer">AI</div>
+          <div class="choice">OpenAI GPT-4o-mini</div>
+          <div class="reason">Change classification with structured JSON output. GPT-4o as fallback for low-confidence cases. Key held server-side in environment variables only.</div>
+        </div>
+        <div class="stack-row">
+          <div class="layer">Discovery</div>
+          <div class="choice">Serper API</div>
+          <div class="reason">Secondary signal only — daily Google SERP query for each authority domain to catch announcements published on pages not in the monitored URL list.</div>
+        </div>
+        <div class="stack-row">
+          <div class="layer">Email</div>
+          <div class="choice">Resend + React Email</div>
+          <div class="reason">Clean Next.js-native email infrastructure. React Email gives fully typed, testable email templates. Resend handles deliverability.</div>
+        </div>
+        <div class="stack-row">
+          <div class="layer">ORM</div>
+          <div class="choice">Prisma</div>
+          <div class="reason">Type-safe database access shared between the Next.js app and the Inngest worker via a shared package in the monorepo.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── 10 ROLLOUT ────────────────────────────────── -->
+    <section class="section" id="rollout">
+      <div class="section-header">
+        <span class="section-index">10</span>
+        <h2 class="section-title">Rollout Plan</h2>
+      </div>
+      <p class="section-lead">
+        Three phases, roughly two weeks total. The goal is a working alert email by end of Phase 1
+        — the dashboard and polish follow.
+      </p>
+
+      <div class="timeline">
+        <div class="tl-phase">
+          <div class="tl-phase-label">Phase 1 · Days 1–5</div>
+          <div class="tl-phase-name">Pipeline first, UI second</div>
+          <ul class="tl-tasks">
+            <li>Neon DB schema + Prisma models</li>
+            <li>Static fetcher + SHA-256 hash check</li>
+            <li>Two adapters: gov.uk + ICA (static, low noise)</li>
+            <li>LLM classify + Postgres write</li>
+            <li>First working alert email via Resend</li>
+          </ul>
+        </div>
+        <div class="tl-phase">
+          <div class="tl-phase-label">Phase 2 · Days 6–10</div>
+          <div class="tl-phase-name">JS sites + stability</div>
+          <ul class="tl-tasks">
+            <li>Playwright worker for VFS adapters</li>
+            <li>Stability window (pending_changes table)</li>
+            <li>R2 snapshot storage</li>
+            <li>Inngest cron jobs per adapter</li>
+            <li>Serper daily discovery scan</li>
+          </ul>
+        </div>
+        <div class="tl-phase">
+          <div class="tl-phase-label">Phase 3 · Days 11–14</div>
+          <div class="tl-phase-name">Dashboard + polish</div>
+          <ul class="tl-tasks">
+            <li>Next.js dashboard — feed + detail views</li>
+            <li>SSE live update endpoint</li>
+            <li>Diff viewer component</li>
+            <li>Adapter config editor UI</li>
+            <li>Email template polish + deep links</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="callout">
+        <div class="callout-label">Adapter tuning period</div>
+        <p>
+          After Phase 1 goes live, run for 48 hours in <strong>log-only mode</strong> — all
+          diffs stored, no emails sent. Review the log to see what the filters are passing or
+          blocking, then tune selectors and strip patterns before turning alerts on. This is
+          especially important for the two VFS adapters.
+        </p>
+      </div>
+    </section>
+
+    <footer>
+      <span class="footer-l">VisaWatch · Internal Architecture Doc</span>
+      <span class="footer-r">v0.1 · April 2026</span>
+    </footer>
+
+  </main>
+</div>
+</body>
+</html>
