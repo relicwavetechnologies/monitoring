@@ -1,0 +1,12 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/tick",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/serper",
+      "schedule": "0 8 * * *"
+    }
+  ]
+}

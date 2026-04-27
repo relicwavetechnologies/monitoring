@@ -1,0 +1,136 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── NextAuth Models ────────────────────────────────────────────────────────
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id             String    @id @default(cuid())
+  name           String?
+  email          String?   @unique
+  emailVerified  DateTime?
+  image          String?
+  password       String?
+  receivesAlerts Boolean   @default(true)
+  accounts       Account[]
+  sessions       Session[]
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ─── Monitoring Models ────────────────────────────────────────────────────────
+
+enum RenderMode {
+  STATIC
+  JS
+}
+
+enum ChangeCategory {
+  POLICY_CHANGE
+  FEE_CHANGE
+  APPOINTMENT
+  DOCUMENT_REQUIREMENT
+  NAVIGATION
+  COSMETIC
+  UNKNOWN
+}
+
+model Site {
+  id              String     @id @default(cuid())
+  name            String
+  url             String
+  renderMode      RenderMode @default(STATIC)
+  contentSelector String     @default("body")
+  stripPatterns   String[]   @default([])
+  pollIntervalMin Int        @default(60)
+  isActive        Boolean    @default(true)
+  lastCheckedAt   DateTime?
+  pendingDiff     Json?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  snapshots       Snapshot[]
+  changes         Change[]
+}
+
+model Snapshot {
+  id          String   @id @default(cuid())
+  siteId      String
+  contentHash String
+  htmlGz      Bytes
+  textGz      Bytes
+  fetchedAt   DateTime @default(now())
+  httpStatus  Int      @default(200)
+  site        Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@index([siteId, fetchedAt(sort: Desc)])
+}
+
+model Change {
+  id             String         @id @default(cuid())
+  siteId         String
+  fromSnapshotId String?
+  toSnapshotId   String
+  category       ChangeCategory @default(UNKNOWN)
+  severity       Int
+  confidence     Float
+  summary        String
+  detail         String?        @db.Text
+  diffText       String         @db.Text
+  emailSent      Boolean        @default(false)
+  detectedAt     DateTime       @default(now())
+  site           Site           @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@index([siteId, detectedAt(sort: Desc)])
+  @@index([severity, detectedAt(sort: Desc)])
+}
+
+model SerperHit {
+  id               String    @id @default(cuid())
+  query            String
+  url              String
+  title            String
+  snippet          String
+  publishedAt      DateTime?
+  seenAt           DateTime  @default(now())
+  promotedToSiteId String?
+
+  @@unique([query, url])
+  @@index([seenAt(sort: Desc)])
+}
