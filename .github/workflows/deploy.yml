@@ -49,10 +49,24 @@ jobs:
           secrets: |
             database_url=${{ secrets.DATABASE_URL }}
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install deps (for prisma config)
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
       - name: Push schema to database
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-        run: npx --yes prisma@7.8.0 db push --schema prisma/schema.prisma --skip-generate
+        run: pnpm exec prisma db push --schema prisma/schema.prisma --skip-generate
 
       - name: Deploy over SSH
         uses: appleboy/ssh-action@v1
