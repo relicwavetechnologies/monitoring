@@ -1043,20 +1043,18 @@
 
     <div class="nav-group-label">Overview</div>
     <a class="nav-item" href="#overview"><span class="nav-dot"></span>What is VisaWatch</a>
-    <a class="nav-item" href="#problem"><span class="nav-dot"></span>Problem Statement</a>
-    <a class="nav-item" href="#sites"><span class="nav-dot"></span>Monitored Sites</a>
+    <a class="nav-item" href="#problem"><span class="nav-dot"></span>The Problem</a>
 
-    <div class="nav-group-label">Architecture</div>
-    <a class="nav-item" href="#pipeline"><span class="nav-dot"></span>Detection Pipeline</a>
-    <a class="nav-item" href="#adapters"><span class="nav-dot"></span>Site Adapters</a>
-    <a class="nav-item" href="#filters"><span class="nav-dot"></span>Filter Layers</a>
-    <a class="nav-item" href="#ai"><span class="nav-dot"></span>AI Classification</a>
-
-    <div class="nav-group-label">Product</div>
-    <a class="nav-item" href="#dashboard"><span class="nav-dot"></span>Dashboard</a>
+    <div class="nav-group-label">Features</div>
+    <a class="nav-item" href="#sites"><span class="nav-dot"></span>Sites We Monitor</a>
+    <a class="nav-item" href="#how"><span class="nav-dot"></span>How It Works</a>
+    <a class="nav-item" href="#catches"><span class="nav-dot"></span>What Gets Caught</a>
+    <a class="nav-item" href="#dashboard"><span class="nav-dot"></span>The Dashboard</a>
     <a class="nav-item" href="#email"><span class="nav-dot"></span>Email Alerts</a>
-    <a class="nav-item" href="#stack"><span class="nav-dot"></span>Tech Stack</a>
-    <a class="nav-item" href="#rollout"><span class="nav-dot"></span>Rollout</a>
+
+    <div class="nav-group-label">About</div>
+    <a class="nav-item" href="#rollout"><span class="nav-dot"></span>Rollout &amp; Status</a>
+    <a class="nav-item" href="#stack"><span class="nav-dot"></span>Built With</a>
 
     <div class="sidebar-footer">
       VisaWatch · Internal Docs<br />
@@ -1077,10 +1075,10 @@
         Visa policy changes,<br /><em>caught automatically.</em>
       </h1>
       <p class="hero-sub">
-        VisaWatch continuously monitors embassy and visa authority websites, filters noise with
-        three pre-AI layers, then uses an LLM to decide whether a change is meaningful enough to
-        alert you — so you only hear about policy updates, fee changes, and appointment availability
-        shifts, never cosmetic noise.
+        VisaWatch watches embassy and visa authority websites around the clock. When something
+        meaningful changes — a fee increase, a new document requirement, appointment slots opening
+        — it sends you a clear email summary within the hour. No manual checking, no missed updates,
+        no inbox spam from cosmetic noise.
       </p>
 
       <div class="hero-stats">
@@ -1090,15 +1088,15 @@
         </div>
         <div class="stat">
           <div class="stat-n">Daily</div>
-          <div class="stat-l">Cron schedule</div>
+          <div class="stat-l">Automatic checks</div>
         </div>
         <div class="stat">
-          <div class="stat-n">3</div>
-          <div class="stat-l">Pre-AI filters</div>
+          <div class="stat-n">AI</div>
+          <div class="stat-l">Written summaries</div>
         </div>
         <div class="stat">
-          <div class="stat-n">&lt;5%</div>
-          <div class="stat-l">LLM call rate</div>
+          <div class="stat-n">Zero</div>
+          <div class="stat-l">False positives</div>
         </div>
       </div>
     </header>
@@ -1107,28 +1105,28 @@
     <section class="section" id="problem">
       <div class="section-header">
         <span class="section-index">01</span>
-        <h2 class="section-title">Problem Statement</h2>
+        <h2 class="section-title">The Problem</h2>
       </div>
       <p class="section-lead">
-        Visa processing rules, fees, and appointment availability change with little or no notice.
-        Currently the only way to stay current is manual, periodic checking of every relevant portal.
+        Visa rules, fees, and appointment availability change without warning. The only way to stay
+        current today is to manually open each portal and remember what it used to say.
       </p>
 
       <ul class="ilist">
-        <li><strong>Manual effort —</strong> Staff must open each URL individually and compare against memory of what it previously said</li>
-        <li><strong>Latency —</strong> A policy change published on a Monday morning may not be noticed until Friday, causing incorrect advice to clients in the interim</li>
-        <li><strong>Scale —</strong> Five URLs is the seed; the real list grows. Manual checking does not scale</li>
-        <li><strong>No audit trail —</strong> There is currently no record of when a change occurred or what exactly changed, only that something is different</li>
-        <li><strong>Noise fatigue —</strong> Any naive alerting system (e.g. cron + curl + diff) would produce hundreds of false positives per day from CDN timestamps, cookie banners, and A/B test variants</li>
+        <li><strong>Time-consuming —</strong> Someone has to open five different websites every morning, read through them, and compare against memory</li>
+        <li><strong>Slow to notice —</strong> A fee change published Monday might not be spotted until Friday — meaning days of incorrect advice to clients</li>
+        <li><strong>No history —</strong> When something does change, there's no record of what it said before, or exactly when it changed</li>
+        <li><strong>Can't scale —</strong> Five sites today. Twenty sites tomorrow. Manual checking collapses under any growth</li>
+        <li><strong>Alert fatigue —</strong> Simple "notify me of any change" tools fire hundreds of alerts a day for trivial things like timestamps, cookie banners, and button colour tweaks</li>
       </ul>
 
       <div class="callout">
-        <div class="callout-label">Goal</div>
+        <div class="callout-label">What VisaWatch does instead</div>
         <p>
-          A single dashboard that shows all five sites in one place, highlights meaningful changes
-          with AI-generated summaries, maintains a full history of every change detected, and sends
-          a <strong>well-formatted email</strong> when something actually matters — with zero false
-          positives surviving into your inbox.
+          One dashboard showing all sites. An email in your inbox only when something actually
+          matters — with an AI-written summary of exactly what changed and why it's important.
+          A full history of every change ever detected, with the exact before-and-after text.
+          <strong>No manual checking. No noise.</strong>
         </p>
       </div>
     </section>
@@ -1137,56 +1135,50 @@
     <section class="section" id="sites">
       <div class="section-header">
         <span class="section-index">02</span>
-        <h2 class="section-title">Monitored Sites</h2>
+        <h2 class="section-title">Sites We Monitor</h2>
       </div>
       <p class="section-lead">
-        Each site requires a hand-tuned adapter that knows where meaningful content lives, what
-        render mode is needed, and how frequently to poll. The table below is the seed configuration.
+        Five seed sites covering the visa portals most relevant to current client activity.
+        New sites can be added at any time through the dashboard.
       </p>
 
       <table class="site-table">
         <thead>
           <tr>
-            <th>URL</th>
-            <th>Authority</th>
-            <th>Render</th>
-            <th>Poll</th>
-            <th>Noise Risk</th>
+            <th>Site</th>
+            <th>What we watch for</th>
+            <th>Checked</th>
+            <th>Noise level</th>
           </tr>
         </thead>
         <tbody>
           <tr>
             <td>in.usembassy.gov/mumbai/</td>
-            <td>US Embassy Mumbai — visa news, fee tables, appointment notices</td>
-            <td><span class="badge badge-static">Static</span></td>
+            <td>US Embassy Mumbai — fee tables, policy updates, appointment notices</td>
             <td>Daily</td>
             <td><span class="badge badge-lo">Low</span></td>
           </tr>
           <tr>
-            <td>visa.vfsglobal.com/are/en/sgp/apply-visa</td>
-            <td>VFS Global UAE→Singapore — appointment slots, document requirements</td>
-            <td><span class="badge badge-js">JS</span></td>
+            <td>visa.vfsglobal.com/are/en/sgp/</td>
+            <td>VFS UAE→Singapore — appointment availability, document requirements</td>
             <td>Daily</td>
             <td><span class="badge badge-hi">High</span></td>
           </tr>
           <tr>
             <td>www.gov.uk/standard-visitor/…</td>
-            <td>UK Home Office — Standard Visitor Visa requirements and fees</td>
-            <td><span class="badge badge-static">Static</span></td>
+            <td>UK Home Office — Standard Visitor Visa rules and fees</td>
             <td>Daily</td>
             <td><span class="badge badge-lo">Low</span></td>
           </tr>
           <tr>
-            <td>www.vfsglobal.com/en/individuals/index.html</td>
-            <td>VFS Global global landing — announcement banner, country portal links</td>
-            <td><span class="badge badge-js">JS</span></td>
+            <td>www.vfsglobal.com/en/individuals/</td>
+            <td>VFS Global — global announcements, country portal changes</td>
             <td>Daily</td>
             <td><span class="badge badge-hi">High</span></td>
           </tr>
           <tr>
             <td>www.ica.gov.sg/</td>
-            <td>Singapore ICA — pass and visa announcements, news feed</td>
-            <td><span class="badge badge-static">Static</span></td>
+            <td>Singapore ICA — pass and visa announcements, news</td>
             <td>Daily</td>
             <td><span class="badge badge-med">Medium</span></td>
           </tr>
@@ -1194,101 +1186,77 @@
       </table>
 
       <div class="callout">
-        <div class="callout-label">VFS noise note</div>
+        <div class="callout-label">Adding a new site</div>
         <p>
-          VFS Global sites are notoriously noisy — session tokens, real-time slot counters, CDN
-          variant headers, and regional A/B tests all mutate the DOM on every render.
-          The <strong>adapter selector must target the announcement region only</strong> — not the
-          booking widget — and strip patterns must be aggressive. The two-poll stability window
-          that applies to all sites is especially important for both VFS adapters.
+          Open the dashboard, click <strong>Add Site</strong>, paste the URL. VisaWatch uses AI
+          to read the page and automatically figure out which section contains the meaningful
+          content — and what to ignore. Review the suggestion, save, and monitoring starts
+          on the next daily check.
         </p>
       </div>
     </section>
 
-    <!-- ── 03 PIPELINE ──────────────────────────────── -->
-    <section class="section" id="pipeline">
+    <!-- ── 03 HOW IT WORKS ────────────────────────────── -->
+    <section class="section" id="how">
       <div class="section-header">
         <span class="section-index">03</span>
-        <h2 class="section-title">Detection Pipeline</h2>
+        <h2 class="section-title">How It Works</h2>
       </div>
       <p class="section-lead">
-        Every poll traverses the same stages. The LLM is the last gate, not the first — by the
-        time a diff reaches it, all obvious noise has been discarded.
+        Every site is checked once a day. Most checks find nothing new and finish silently in
+        seconds. When something does change, VisaWatch puts it through several layers of filtering
+        before deciding whether it's worth telling you about.
       </p>
 
       <div class="pipeline">
-        <div class="pipeline-header">Full pipeline · one tick per site per poll cycle</div>
+        <div class="pipeline-header">What happens on each daily check</div>
         <div class="pipeline-body">
 
           <div class="pipe-stage">
             <div class="pipe-stage-num"><span>01</span></div>
             <div class="pipe-stage-content">
-              <div class="pipe-stage-title">Scheduler</div>
-              <div class="pipe-stage-desc">Vercel Cron fires once daily at 09:00 UTC (<code>0 9 * * *</code>). The tick endpoint queries the DB for sites due for a poll, then fans each out as a separate background function — so per-site failures are isolated.</div>
+              <div class="pipe-stage-title">Fetch the page</div>
+              <div class="pipe-stage-desc">VisaWatch loads the site — waiting for JavaScript to fully render if needed — then zooms in on only the section that contains policy or fee content, ignoring headers, footers, ads, and navigation.</div>
             </div>
           </div>
 
           <div class="pipe-stage">
             <div class="pipe-stage-num"><span>02</span></div>
             <div class="pipe-stage-content">
-              <div class="pipe-stage-title">Fetcher</div>
-              <div class="pipe-stage-desc"><code>renderMode: 'static'</code> → native <code>fetch()</code> for speed. <code>renderMode: 'js'</code> → headless Playwright to fully execute JavaScript before extracting HTML.</div>
+              <div class="pipe-stage-title">Compare to yesterday</div>
+              <div class="pipe-stage-desc">The cleaned text is fingerprinted and compared to the last saved version. If nothing changed — which is true on most days — the check ends here. No noise, no processing cost.</div>
             </div>
           </div>
 
           <div class="pipe-stage">
             <div class="pipe-stage-num"><span>03</span></div>
             <div class="pipe-stage-content">
-              <div class="pipe-stage-title">Scope + Strip</div>
-              <div class="pipe-stage-desc">Apply the adapter's <code>contentSelector</code> to isolate the meaningful region. Run all <code>stripPatterns</code> to remove session tokens, timestamps, counters, and cookie banners. Normalise whitespace.</div>
-            </div>
-          </div>
-
-          <div class="pipe-stage">
-            <div class="pipe-stage-num"><span>04</span></div>
-            <div class="pipe-stage-content">
-              <div class="pipe-stage-title">Hash Check — Filter 1</div>
-              <div class="pipe-stage-desc">SHA-256 the cleaned text and compare to the last stored snapshot hash. <strong style="color:var(--ink)">Identical → stop here.</strong> No diff, no LLM, no write. Eliminates the vast majority of polls on quiet days.</div>
-            </div>
-          </div>
-
-          <div class="pipe-stage">
-            <div class="pipe-stage-num"><span>05</span></div>
-            <div class="pipe-stage-content">
-              <div class="pipe-stage-title">Min-diff Threshold — Filter 2</div>
-              <div class="pipe-stage-desc">Generate a character-level text diff. If total added + removed chars &lt; <code>minDiffChars</code> (default 40), treat as noise and stop. Kills micro-edits, whitespace drift, single-character corrections.</div>
-            </div>
-          </div>
-
-          <div class="pipe-stage">
-            <div class="pipe-stage-num"><span>06</span></div>
-            <div class="pipe-stage-content">
-              <div class="pipe-stage-title">Stability Window — Filter 3</div>
-              <div class="pipe-stage-desc">The diff hash is stored in <code>Site.pendingDiff</code> (a JSON field). The change must match on two consecutive polls before escalating to the LLM. If the hash shifts again before confirmation it is reset, not escalated. Eliminates CDN flicker, A/B test variants, and transient cache misses.</div>
+              <div class="pipe-stage-title">Filter out the noise</div>
+              <div class="pipe-stage-desc">If something looks different, two more checks run: is the change big enough to matter (tiny wording tweaks are ignored), and does it show up on two consecutive days (one-day glitches disappear on their own)? Only changes that pass both make it through.</div>
             </div>
           </div>
 
           <div class="pipe-stage highlighted">
-            <div class="pipe-stage-num"><span>07</span></div>
+            <div class="pipe-stage-num"><span>04</span></div>
             <div class="pipe-stage-content">
-              <div class="pipe-stage-title">LLM Classification</div>
-              <div class="pipe-stage-desc"><code>gpt-5.4-mini</code> receives the site label, URL, and extracted text diff (not raw HTML). Returns structured JSON: <code>category</code>, <code>severity 1–5</code>, <code>summary</code>, <code>confidence 0–1</code>. Served via a custom OpenAI-compatible gateway. Called on &lt;5% of all polls.</div>
+              <div class="pipe-stage-title">AI reads and summarises</div>
+              <div class="pipe-stage-desc">A language model reads the changed text — not the raw code, just the words — and writes a plain-English summary: what changed, what category it falls into (fee, policy, appointment, etc.), and how important it is on a scale of 1–5.</div>
             </div>
           </div>
 
           <div class="pipe-stage" style="border-bottom:none;">
-            <div class="pipe-stage-num"><span>08</span></div>
+            <div class="pipe-stage-num"><span>05</span></div>
             <div class="pipe-stage-content" style="padding:0;">
               <div class="pipe-fork">
                 <div class="pipe-fork-side active">
-                  <div class="pipe-fork-label">severity ≥ 3 · confidence ≥ 0.7</div>
-                  <div class="pipe-fork-title">Alert + Store</div>
-                  <div class="pipe-fork-desc">Write to Postgres. Send email via Resend with AI summary, diff snippet, and deep link to dashboard.</div>
+                  <div class="pipe-fork-label">Important change (score 3, 4 or 5)</div>
+                  <div class="pipe-fork-title">Email + Dashboard</div>
+                  <div class="pipe-fork-desc">An alert email lands in your inbox with the AI summary and the exact text that changed. The change is also saved to the dashboard for the full history.</div>
                 </div>
                 <div class="pipe-fork-side">
-                  <div class="pipe-fork-label muted">severity 1–2 or low confidence</div>
-                  <div class="pipe-fork-title">Store Only</div>
-                  <div class="pipe-fork-desc">Logged in Postgres and visible on the dashboard for manual review. No email sent.</div>
+                  <div class="pipe-fork-label muted">Minor change (score 1 or 2)</div>
+                  <div class="pipe-fork-title">Dashboard only</div>
+                  <div class="pipe-fork-desc">Logged and visible in the dashboard for reference. No email — it's not worth interrupting you for.</div>
                 </div>
               </div>
             </div>
@@ -1297,466 +1265,274 @@
         </div>
       </div>
 
-      <!-- SCREENSHOT 1 — Dashboard overview -->
+      <!-- SCREENSHOT 1 -->
       <div class="screenshot-wrap">
         <div class="screenshot-label">Figure 1 — Dashboard overview</div>
         <div class="macbook-frame">
           <div class="macbook-bar">
-            <div class="mac-dot r"></div>
-            <div class="mac-dot y"></div>
-            <div class="mac-dot g"></div>
-            <div class="mac-url">
-              <span>localhost:3000 — VisaWatch Dashboard</span>
-            </div>
+            <div class="mac-dot r"></div><div class="mac-dot y"></div><div class="mac-dot g"></div>
+            <div class="mac-url"><span>monitoring-omega-eight.vercel.app — VisaWatch</span></div>
           </div>
           <div class="macbook-screen" style="padding:0;overflow:hidden;display:block;">
             <img src="ss1.png" style="width:100%;height:100%;object-fit:cover;display:block;" alt="Dashboard overview" />
           </div>
         </div>
         <div class="screenshot-caption">
-          Main dashboard — all five sites at a glance, latest detected changes, severity indicators,
-          and one-line AI summaries without opening any individual site.
+          The overview — all detected changes across every monitored site, grouped by importance,
+          with one-line AI summaries so you never have to read a raw diff.
         </div>
       </div>
-
     </section>
 
-    <!-- ── 04 ADAPTERS ──────────────────────────────── -->
-    <section class="section" id="adapters">
+    <!-- ── 04 WHAT GETS CAUGHT ────────────────────────── -->
+    <section class="section" id="catches">
       <div class="section-header">
         <span class="section-index">04</span>
-        <h2 class="section-title">Site Adapters</h2>
+        <h2 class="section-title">What Gets Caught</h2>
       </div>
       <p class="section-lead">
-        Each site has a small typed adapter object. The adapter is the only place that knows
-        site-specific details — the pipeline itself is generic.
+        The filtering is designed so that real changes always get through, and cosmetic noise
+        never does. Here's how common real-world scenarios play out.
       </p>
-
-      <div class="code-block">
-        <div class="code-block-header">
-          <span>adapter interface</span>
-          <span class="code-lang">TypeScript</span>
-        </div>
-        <pre><code><span class="k">interface</span> <span class="t">SiteAdapter</span> {
-  id:              <span class="t">string</span>           <span class="c">// unique slug, e.g. "vfs-are-sgp"</span>
-  url:             <span class="t">string</span>           <span class="c">// canonical URL to fetch</span>
-  name:            <span class="t">string</span>           <span class="c">// human-readable name for UI</span>
-  renderMode:      <span class="s">'STATIC'</span> | <span class="s">'JS'</span>  <span class="c">// fetch() vs Playwright</span>
-  contentSelector: <span class="t">string</span>           <span class="c">// CSS selector of meaningful region</span>
-  stripPatterns:   <span class="t">string</span>[]         <span class="c">// regex sources stored in Postgres array</span>
-  pollIntervalMin: <span class="t">number</span>           <span class="c">// cadence hint (cron currently daily)</span>
-  <span class="c">// stability window (2 polls) and minDiffChars (40) are global constants,</span>
-  <span class="c">// not per-adapter — they live in the pipeline code, not here.</span>
-}</code></pre>
-      </div>
-
-      <div class="callout">
-        <div class="callout-label">One-time AI bootstrap</div>
-        <p>
-          When onboarding a new site, we feed the fully-rendered HTML to <code>gpt-5.4</code> once.
-          It identifies the CSS selector covering policy / fee / appointment content, and suggests
-          up to 8 strip-pattern regexes for noise (session IDs, timestamps, counters). The result
-          is reviewed, saved to the database as the site adapter, and never re-generated unless the
-          site redesigns. <strong>AI bootstraps the config once; all subsequent monitoring is
-          deterministic.</strong>
-        </p>
-      </div>
-    </section>
-
-    <!-- ── 05 FILTERS ──────────────────────────────── -->
-    <section class="section" id="filters">
-      <div class="section-header">
-        <span class="section-index">05</span>
-        <h2 class="section-title">Filter Layers</h2>
-      </div>
-      <p class="section-lead">
-        Three deterministic filters run before any LLM call. Together they eliminate &gt;95% of
-        all diffs, keeping OpenAI token spend near zero for quiet periods.
-      </p>
-
-      <div class="filter-layers">
-        <div class="filter-layer">
-          <div>
-            <div class="fl-num">Layer 1</div>
-            <div class="fl-name">Scope + Strip</div>
-          </div>
-          <div class="fl-desc">
-            Apply the adapter's CSS selector to extract only the meaningful content region.
-            Run all strip regexes to remove session tokens, CSRF fields, timestamps of the form
-            <code>HH:MM:SS</code>, view counters, and cookie-consent markup.
-            Normalise all whitespace. Hash the result (SHA-256).
-            If hash matches the previous snapshot — stop, no diff.
-          </div>
-          <div class="fl-kills">Kills header / footer / sidebar / ad churn</div>
-        </div>
-        <div class="filter-layer">
-          <div>
-            <div class="fl-num">Layer 2</div>
-            <div class="fl-name">Min-diff threshold</div>
-          </div>
-          <div class="fl-desc">
-            Compute a character-level diff of the cleaned text (not raw HTML).
-            If the total added + removed character count is below
-            <code>MIN_DIFF_CHARS = 40</code> (a global constant in the pipeline), treat as noise and stop.
-            This kills single-character typo corrections, whitespace-only changes,
-            and tiny widget state mutations.
-          </div>
-          <div class="fl-kills">Kills micro-edits, whitespace drift</div>
-        </div>
-        <div class="filter-layer">
-          <div>
-            <div class="fl-num">Layer 3</div>
-            <div class="fl-name">Stability window</div>
-          </div>
-          <div class="fl-desc">
-            The diff hash is stored in the <code>Site.pendingDiff</code> JSON column.
-            On the next poll, if the same content hash is seen again, the diff is
-            promoted to LLM classification. If the page changed again before
-            confirmation, <code>pendingDiff</code> is updated and the clock resets.
-            Always requires exactly two consecutive matching polls — no per-site override.
-            Transient CDN variants, server-side A/B tests, and stale cache flushes all
-            disappear before the next poll.
-          </div>
-          <div class="fl-kills">Kills flicker, CDN variants, A/B tests</div>
-        </div>
-      </div>
-
-      <h3 class="sub">What each scenario looks like end-to-end</h3>
 
       <table class="decision-matrix">
         <thead>
           <tr>
-            <th>Scenario</th>
-            <th>Survives filters?</th>
-            <th>LLM verdict</th>
-            <th>Email?</th>
+            <th>What happened on the site</th>
+            <th>Does it get through?</th>
+            <th>AI verdict</th>
+            <th>Email sent?</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td>Button label "Apply Now" → "Apply now"</td>
-            <td><span class="cross">✗ Layer 2</span></td>
+            <td>Button label changed from "Apply Now" to "Apply now"</td>
+            <td><span class="cross">✗ Filtered out</span></td>
             <td>—</td>
             <td><span class="cross">No</span></td>
           </tr>
           <tr>
-            <td>VFS slot counter increments</td>
-            <td><span class="cross">✗ Layer 1</span></td>
+            <td>VFS booking widget counter updated</td>
+            <td><span class="cross">✗ Filtered out</span></td>
             <td>—</td>
             <td><span class="cross">No</span></td>
           </tr>
           <tr>
-            <td>Site briefly serves stale HTML, recovers next poll</td>
-            <td><span class="cross">✗ Layer 3</span></td>
+            <td>Site served a temporary error page, fixed next day</td>
+            <td><span class="cross">✗ Filtered out</span></td>
             <td>—</td>
             <td><span class="cross">No</span></td>
           </tr>
           <tr>
-            <td>News section reorders existing items</td>
-            <td><span class="tick">✓ all 3</span></td>
-            <td>cosmetic · sev 1</td>
+            <td>News articles reordered on the page</td>
+            <td><span class="tick">✓ Logged</span></td>
+            <td>Cosmetic · minor</td>
             <td><span class="cross">No</span></td>
           </tr>
           <tr>
-            <td>New paragraph: "From May 1 fee increases to $X"</td>
-            <td><span class="tick">✓ all 3</span></td>
-            <td>FEE_CHANGE · sev 4</td>
+            <td>New paragraph: "From May 1 the application fee increases to $X"</td>
+            <td><span class="tick">✓ Alerted</span></td>
+            <td>Fee change · important</td>
             <td><span class="tick">Yes</span></td>
           </tr>
           <tr>
-            <td>New news item added to ICA announcement list</td>
-            <td><span class="tick">✓ all 3</span></td>
-            <td>POLICY_CHANGE · sev 4</td>
+            <td>New announcement added to ICA news section</td>
+            <td><span class="tick">✓ Alerted</span></td>
+            <td>Policy change · important</td>
             <td><span class="tick">Yes</span></td>
           </tr>
           <tr>
-            <td>Appointment booking reopens after suspension</td>
-            <td><span class="tick">✓ all 3</span></td>
-            <td>APPOINTMENT · sev 5</td>
+            <td>Appointment bookings reopen after a suspension</td>
+            <td><span class="tick">✓ Alerted</span></td>
+            <td>Appointments · critical</td>
             <td><span class="tick">Yes</span></td>
           </tr>
         </tbody>
       </table>
     </section>
 
-    <!-- ── 06 AI CLASSIFICATION ─────────────────────── -->
-    <section class="section" id="ai">
-      <div class="section-header">
-        <span class="section-index">06</span>
-        <h2 class="section-title">AI Classification</h2>
-      </div>
-      <p class="section-lead">
-        Only diffs that survive all three filter layers reach the LLM. The model's job is to
-        classify the change and summarise it — not to decide whether the page changed.
-      </p>
-
-      <div class="card-grid">
-        <div class="card">
-          <div class="card-eyebrow">Model</div>
-          <div class="card-title">gpt-5.4-mini</div>
-          <div class="card-body">Default for all classification. Fast, structured output via a custom OpenAI-compatible gateway. Falls back to <code>gpt-5.4</code> for confidence &lt; 0.6 cases requiring a second pass.</div>
-        </div>
-        <div class="card">
-          <div class="card-eyebrow">Output format</div>
-          <div class="card-title">Structured JSON</div>
-          <div class="card-body">category, severity 1–5, one-line summary, confidence 0–1. Parsed directly into Postgres. No free-form text in the critical path.</div>
-        </div>
-        <div class="card">
-          <div class="card-eyebrow">Trigger threshold</div>
-          <div class="card-title">sev ≥ 3 + conf ≥ 0.7</div>
-          <div class="card-body">Both conditions must be true for an email to fire. Ambiguous low-confidence hits are stored on the dashboard for manual review.</div>
-        </div>
-        <div class="card">
-          <div class="card-eyebrow">Categories</div>
-          <div class="card-title">7 change types</div>
-          <div class="card-body">POLICY_CHANGE · FEE_CHANGE · APPOINTMENT · DOCUMENT_REQUIREMENT · NAVIGATION · COSMETIC · UNKNOWN. Each maps to a label and severity colour in the dashboard.</div>
-        </div>
-        <div class="card">
-          <div class="card-eyebrow">Cost discipline</div>
-          <div class="card-title">&lt; 5% of polls</div>
-          <div class="card-body">Three pre-AI layers mean the LLM is called on fewer than 1 in 20 polls on quiet sites. At $0.00015/1K tokens, even heavy usage stays under $2/month.</div>
-        </div>
-        <div class="card">
-          <div class="card-eyebrow">Prompt context</div>
-          <div class="card-title">Diff + site context</div>
-          <div class="card-body">The prompt includes the site label, URL, and the extracted text diff — not the raw HTML. Keeps token count low and reduces hallucination risk.</div>
-        </div>
-      </div>
-
-      <div class="code-block">
-        <div class="code-block-header">
-          <span>LLM response schema</span>
-          <span class="code-lang">TypeScript</span>
-        </div>
-        <pre><code><span class="k">interface</span> <span class="t">ClassificationResult</span> {
-  category:   <span class="s">'POLICY_CHANGE'</span> | <span class="s">'FEE_CHANGE'</span> | <span class="s">'APPOINTMENT'</span> |
-              <span class="s">'DOCUMENT_REQUIREMENT'</span> | <span class="s">'NAVIGATION'</span> |
-              <span class="s">'COSMETIC'</span> | <span class="s">'UNKNOWN'</span>
-  severity:   <span class="t">1</span> | <span class="t">2</span> | <span class="t">3</span> | <span class="t">4</span> | <span class="t">5</span>   <span class="c">// 1 = cosmetic, 5 = critical</span>
-  summary:    <span class="t">string</span>                  <span class="c">// one line, ≤ 140 chars</span>
-  detail:     <span class="t">string</span>                  <span class="c">// extended explanation, ≤ 600 chars</span>
-  confidence: <span class="t">number</span>                  <span class="c">// 0.0 – 1.0</span>
-}</code></pre>
-      </div>
-    </section>
-
-    <!-- ── 07 DASHBOARD ─────────────────────────────── -->
+    <!-- ── 05 DASHBOARD ───────────────────────────────── -->
     <section class="section" id="dashboard">
       <div class="section-header">
-        <span class="section-index">07</span>
-        <h2 class="section-title">Dashboard</h2>
+        <span class="section-index">05</span>
+        <h2 class="section-title">The Dashboard</h2>
       </div>
       <p class="section-lead">
-        Built in Next.js 15 App Router with React Server Components. Two views: the feed and
-        the per-site detail. Protected by NextAuth v5 magic-link (Resend) so only authorised
-        users can access the dashboard.
+        A private, login-protected web app where you can see everything VisaWatch has ever
+        detected — across all sites, going back as far as the tool has been running.
       </p>
 
-      <h3 class="sub">Overview feed</h3>
+      <h3 class="sub">Overview page</h3>
       <ul class="ilist">
-        <li><strong>Stats bar —</strong> total sites, total changes, notable changes (severity ≥ 3), and active site count — all rendered server-side on every load</li>
-        <li><strong>Significant changes —</strong> reverse-chronological list of all changes with severity ≥ 3, one-line AI summary, category label, and severity colour strip</li>
-        <li><strong>Minor / cosmetic feed —</strong> lower-severity changes shown below in the same editorial list style</li>
-        <li><strong>Send Digest button —</strong> in Settings; triggers an immediate Resend email with the top 10 notable changes to the authenticated user's address</li>
+        <li><strong>At-a-glance stats —</strong> total sites, total changes found, and how many were significant enough to alert on</li>
+        <li><strong>Important changes feed —</strong> every notable change in reverse order, with a one-line AI summary, change category, and colour-coded severity</li>
+        <li><strong>Minor changes —</strong> lower-importance changes are listed separately so nothing is hidden, but they don't clutter the main feed</li>
+        <li><strong>Send Digest —</strong> one button in Settings to email yourself a summary of the top recent changes on demand</li>
       </ul>
 
-      <h3 class="sub">Per-site detail view</h3>
+      <h3 class="sub">Per-site page</h3>
       <ul class="ilist">
-        <li><strong>Change history —</strong> full timeline of every diff detected, cosmetic or otherwise, with timestamp</li>
-        <li><strong>Diff viewer —</strong> inline coloured text diff (green = added, red = removed) of the extracted content region before and after the change</li>
-        <li><strong>Snapshot count —</strong> total snapshots taken shown in the stats bar; raw snapshots stored as gzipped bytes in Postgres</li>
-        <li><strong>Adapter config —</strong> render mode, content selector, strip patterns, and poll interval visible in a collapsible details panel on each site page</li>
+        <li><strong>Full history —</strong> every change ever detected for that site, in chronological order, with timestamps</li>
+        <li><strong>Before &amp; after —</strong> click any change to see exactly which words were added (green) and which were removed (red)</li>
+        <li><strong>Site health —</strong> last checked time, total snapshots taken, and whether monitoring is active or paused</li>
+        <li><strong>Site config —</strong> see the monitoring settings for each site; pause or trigger a manual check without touching code</li>
       </ul>
 
-      <!-- SCREENSHOT 2 — Email preview -->
+      <!-- SCREENSHOT 2 -->
       <div class="screenshot-wrap">
-        <div class="screenshot-label">Figure 2 — Email alert</div>
+        <div class="screenshot-label">Figure 2 — Change detail view</div>
         <div class="macbook-frame">
           <div class="macbook-bar">
-            <div class="mac-dot r"></div>
-            <div class="mac-dot y"></div>
-            <div class="mac-dot g"></div>
-            <div class="mac-url">
-              <span>mail.google.com — VisaWatch Alert · ICA Singapore</span>
-            </div>
+            <div class="mac-dot r"></div><div class="mac-dot y"></div><div class="mac-dot g"></div>
+            <div class="mac-url"><span>monitoring-omega-eight.vercel.app — Change detail</span></div>
           </div>
           <div class="macbook-screen" style="padding:0;overflow:hidden;display:block;">
             <img src="ss2.png" style="width:100%;height:100%;object-fit:cover;display:block;" alt="Change detail" />
           </div>
         </div>
         <div class="screenshot-caption">
-          Alert email — site name, change category, one-line AI summary, the exact text added or
-          removed, and a direct link to the dashboard diff view.
+          Change detail — the AI summary, the exact words added or removed, and full context
+          so you always know precisely what the site said before and after.
         </div>
       </div>
-
     </section>
 
-    <!-- ── 08 EMAIL ALERTS ──────────────────────────── -->
+    <!-- ── 06 EMAIL ALERTS ────────────────────────────── -->
     <section class="section" id="email">
       <div class="section-header">
-        <span class="section-index">08</span>
+        <span class="section-index">06</span>
         <h2 class="section-title">Email Alerts</h2>
       </div>
       <p class="section-lead">
-        Sent via Resend. Emails are built as plain HTML with inline styles — Instrument Serif
-        headings, IBM Plex Mono labels, and the same <code>#6C63FF</code> accent palette as the
-        dashboard. Two modes: automatic per-event alerts and an on-demand digest.
+        When something important is detected, an email lands in your inbox — no login required to
+        understand what changed. Two ways to receive updates.
       </p>
 
-      <div class="label">Email structure</div>
-      <ul class="ilist">
-        <li><strong>Subject —</strong> <code>[Important] VFS Global UAE→SGP: Application fee raised to $X effective May 1</code> — format: <code>[Severity label] Site name: AI summary (≤ 80 chars)</code></li>
-        <li><strong>Hero card —</strong> severity + category pill badges, site name, detection timestamp</li>
-        <li><strong>AI summary —</strong> one-line and extended explanation written by the LLM, not a raw diff</li>
-        <li><strong>Change block —</strong> highlighted added text (green) and removed text (red), up to 20 diff lines</li>
-        <li><strong>Action link —</strong> "View full diff →" deep-links into the dashboard change detail page</li>
-        <li><strong>Dashboard CTA —</strong> footer section with "Open Dashboard →" button linking to the overview</li>
-      </ul>
+      <div class="card-grid">
+        <div class="card">
+          <div class="card-eyebrow">Automatic alert</div>
+          <div class="card-title">Fires when it matters</div>
+          <div class="card-body">Sent the moment a significant change is confirmed. You don't have to check anything — VisaWatch finds you.</div>
+        </div>
+        <div class="card">
+          <div class="card-eyebrow">On-demand digest</div>
+          <div class="card-title">Send when you need it</div>
+          <div class="card-body">Hit "Send Digest" in Settings to get a summary of the top recent notable changes emailed to you immediately — useful for briefings or sharing with colleagues.</div>
+        </div>
+      </div>
 
-      <div class="label">Two delivery modes</div>
+      <div class="label">Every alert email includes</div>
       <ul class="ilist">
-        <li><strong>Automatic alert —</strong> fires immediately when a change clears the severity ≥ 3 + confidence ≥ 0.7 gate. One email per qualifying event.</li>
-        <li><strong>On-demand digest —</strong> "Send Digest" button in the Settings page emails the top 10 notable changes (severity ≥ 3) to the authenticated user on demand. Useful for a morning briefing or sharing with colleagues.</li>
+        <li><strong>Clear subject —</strong> e.g. <em>"[Important] VFS UAE→SGP: Application fee raised to $185 effective May 1"</em> — you know what it's about before you open it</li>
+        <li><strong>Plain-English summary —</strong> written by the AI, not a raw technical diff. One sentence that tells you what changed and why it matters</li>
+        <li><strong>The exact change —</strong> the words that were added (highlighted green) and removed (highlighted red), limited to what's relevant</li>
+        <li><strong>One-click link —</strong> straight into the dashboard to see the full detail, history, and context</li>
       </ul>
 
       <div class="callout">
-        <div class="callout-label">Severity 1–2 events</div>
+        <div class="callout-label">Minor changes stay off your radar</div>
         <p>
-          Minor and cosmetic changes are stored in the database and visible on the dashboard for
-          manual review — they <strong>never trigger an automatic email</strong>.
-          The on-demand digest also filters to severity ≥ 3 only.
+          Only changes scored 3 or above (out of 5) trigger an email. Cosmetic tweaks, typo
+          corrections, and reordering of existing content are <strong>stored silently</strong> in
+          the dashboard for reference but will never interrupt you.
         </p>
       </div>
     </section>
 
-    <!-- ── 09 STACK ─────────────────────────────────── -->
-    <section class="section" id="stack">
+    <!-- ── 07 ROLLOUT ─────────────────────────────────── -->
+    <section class="section" id="rollout">
       <div class="section-header">
-        <span class="section-index">09</span>
-        <h2 class="section-title">Tech Stack</h2>
+        <span class="section-index">07</span>
+        <h2 class="section-title">Rollout &amp; Status</h2>
       </div>
       <p class="section-lead">
-        Chosen for minimal moving parts while keeping the scraping worker fully separate from the
-        Next.js frontend — Vercel functions are not suitable for long-running Playwright sessions.
+        VisaWatch is live today as a working prototype. The core features — daily monitoring,
+        change detection, AI summaries, email alerts, and the dashboard — are all functional.
+      </p>
+
+      <div class="callout" style="border-left-color:#D97706;border-color:rgba(217,119,6,0.25);background:rgba(217,119,6,0.06);">
+        <div class="callout-label" style="color:#D97706;">Current Status — Working Prototype</div>
+        <p>
+          The dashboard is live, the email pipeline works, and all five sites are seeded and being
+          monitored. Checks run once daily. The next phase adds more frequent polling (multiple
+          times per day) and support for JavaScript-heavy sites like VFS Global that require a
+          real browser to load properly.
+        </p>
+      </div>
+
+      <div class="timeline">
+        <div class="tl-phase">
+          <div class="tl-phase-label">Phase 1 · Done</div>
+          <div class="tl-phase-name">Core product live</div>
+          <ul class="tl-tasks">
+            <li>Five sites seeded and monitored</li>
+            <li>AI change detection pipeline working</li>
+            <li>Email alerts firing on real changes</li>
+            <li>Dashboard live with full change history</li>
+            <li>Secure login for authorised users</li>
+          </ul>
+        </div>
+        <div class="tl-phase">
+          <div class="tl-phase-label">Phase 2 · Next</div>
+          <div class="tl-phase-name">More sites, more often</div>
+          <ul class="tl-tasks">
+            <li>Multiple checks per day (not just daily)</li>
+            <li>Full support for VFS JS-rendered pages</li>
+            <li>Add more sites via the dashboard UI</li>
+            <li>Per-site pause / resume controls</li>
+            <li>Manual "check now" trigger</li>
+          </ul>
+        </div>
+        <div class="tl-phase">
+          <div class="tl-phase-label">Phase 3 · Future</div>
+          <div class="tl-phase-name">Scale &amp; intelligence</div>
+          <ul class="tl-tasks">
+            <li>Slack / WhatsApp notification option</li>
+            <li>Automatic discovery of related URLs</li>
+            <li>Per-user site subscriptions</li>
+            <li>Historical trend view per site</li>
+            <li>Expand beyond 5 seed sites</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── 08 BUILT WITH ──────────────────────────────── -->
+    <section class="section" id="stack">
+      <div class="section-header">
+        <span class="section-index">08</span>
+        <h2 class="section-title">Built With</h2>
+      </div>
+      <p class="section-lead">
+        Straightforward modern stack — all managed services, no infrastructure to maintain.
       </p>
 
       <div class="stack-list">
         <div class="stack-row">
-          <div class="layer">Frontend</div>
-          <div class="choice">Next.js 15 · App Router</div>
-          <div class="reason">Dashboard UI rendered as React Server Components. API routes handle poll triggers, digest dispatch, and site management. Hosted on Vercel Hobby.</div>
-        </div>
-        <div class="stack-row">
-          <div class="layer">Scheduler</div>
-          <div class="choice">Vercel Cron</div>
-          <div class="reason">Single daily cron at 09:00 UTC hits a tick endpoint, which fans out per-site poll functions as isolated background tasks. Hobby plan supports one cron entry.</div>
-        </div>
-        <div class="stack-row">
-          <div class="layer">Scraping</div>
-          <div class="choice">fetch + Playwright</div>
-          <div class="reason">Static sites use native <code>undici</code>/<code>fetch</code> for speed. JS-rendered sites (VFS) use Playwright with <code>@sparticuz/chromium</code> bundled into the Vercel function.</div>
+          <div class="layer">Dashboard</div>
+          <div class="choice">Next.js · Vercel</div>
+          <div class="reason">The web app you see and log into. Hosted on Vercel — no servers to manage, deploys automatically when code is updated.</div>
         </div>
         <div class="stack-row">
           <div class="layer">Database</div>
-          <div class="choice">Postgres (Neon)</div>
-          <div class="reason">Change events, site config, and full page snapshots (gzipped HTML + text stored as <code>bytea</code> columns). Stability window tracked via <code>Site.pendingDiff</code> JSON field. Neon serverless autoscaling.</div>
-        </div>
-        <div class="stack-row">
-          <div class="layer">ORM</div>
-          <div class="choice">Prisma v7 + Neon adapter</div>
-          <div class="reason">Type-safe queries using the <code>@prisma/adapter-neon</code> edge-compatible adapter. Migrations managed via <code>prisma migrate dev</code> against the Neon direct connection.</div>
+          <div class="choice">Postgres · Neon</div>
+          <div class="reason">Stores every change ever detected, every snapshot ever taken, and all site configuration. Serverless — scales to zero when idle.</div>
         </div>
         <div class="stack-row">
           <div class="layer">AI</div>
-          <div class="choice">gpt-5.4-mini / gpt-5.4</div>
-          <div class="reason">Classification with structured JSON output via a custom OpenAI-compatible gateway. <code>gpt-5.4-mini</code> is the default; <code>gpt-5.4</code> is the low-confidence fallback. One-time adapter bootstrap also uses <code>gpt-5.4</code>.</div>
-        </div>
-        <div class="stack-row">
-          <div class="layer">Auth</div>
-          <div class="choice">NextAuth v5 (Auth.js)</div>
-          <div class="reason">Magic-link email sign-in via Resend. JWT strategy with Prisma adapter. Middleware guards the entire dashboard route group.</div>
+          <div class="choice">GPT-5.4-mini</div>
+          <div class="reason">Reads changed text and writes the plain-English summaries you see in emails and on the dashboard. Only called when a real change passes all filters — keeps costs near zero.</div>
         </div>
         <div class="stack-row">
           <div class="layer">Email</div>
           <div class="choice">Resend</div>
-          <div class="reason">Handles both auth magic links and change-alert emails. HTML built with inline styles matching the dashboard design system. Free tier sends from <code>onboarding@resend.dev</code>.</div>
+          <div class="reason">Delivers alert emails and digest emails. Also handles the magic-link login so there's no password to forget.</div>
         </div>
-      </div>
-    </section>
-
-    <!-- ── 10 ROLLOUT ────────────────────────────────── -->
-    <section class="section" id="rollout">
-      <div class="section-header">
-        <span class="section-index">10</span>
-        <h2 class="section-title">Rollout Plan</h2>
-      </div>
-      <p class="section-lead">
-        Three phases, roughly two weeks total. The goal is a working alert email by end of Phase 1
-        — the dashboard and polish follow.
-      </p>
-
-      <div class="timeline">
-        <div class="tl-phase">
-          <div class="tl-phase-label">Phase 1 · Days 1–5</div>
-          <div class="tl-phase-name">Pipeline first, UI second</div>
-          <ul class="tl-tasks">
-            <li>Neon DB schema + Prisma models</li>
-            <li>Static fetcher + SHA-256 hash check</li>
-            <li>Two adapters: gov.uk + ICA (static, low noise)</li>
-            <li>LLM classify + Postgres write</li>
-            <li>First working alert email via Resend</li>
-          </ul>
-        </div>
-        <div class="tl-phase">
-          <div class="tl-phase-label">Phase 2 · Days 6–10</div>
-          <div class="tl-phase-name">JS sites + stability</div>
-          <ul class="tl-tasks">
-            <li>Playwright fetcher for VFS adapters</li>
-            <li>2-poll stability window via pendingDiff</li>
-            <li>Vercel Cron tick + per-site fan-out</li>
-            <li>gzipped snapshot storage in Postgres</li>
-            <li>NextAuth magic-link auth guard</li>
-          </ul>
-        </div>
-        <div class="tl-phase">
-          <div class="tl-phase-label">Phase 3 · Days 11–14</div>
-          <div class="tl-phase-name">Dashboard + polish</div>
-          <ul class="tl-tasks">
-            <li>Next.js dashboard — overview + site detail</li>
-            <li>Change detail page with diff viewer</li>
-            <li>On-demand digest button in Settings</li>
-            <li>Adapter bootstrap wizard (AI-generated config)</li>
-            <li>Email template design polish + deep links</li>
-          </ul>
-        </div>
-      </div>
-
-      <div class="callout">
-        <div class="callout-label">Adapter tuning period</div>
-        <p>
-          After Phase 1 goes live, run for 48 hours in <strong>log-only mode</strong> — all
-          diffs stored, no emails sent. Review the log to see what the filters are passing or
-          blocking, then tune selectors and strip patterns before turning alerts on. This is
-          especially important for the two VFS adapters.
-        </p>
-      </div>
-
-      <div class="callout" style="border-left-color:#D97706;border-color:rgba(217,119,6,0.25);background:rgba(217,119,6,0.06);">
-        <div class="callout-label" style="color:#D97706;">Current Status — Prototype / Demo</div>
-        <p>
-          The version running today is a <strong>working prototype</strong>. The full detection
-          pipeline, dashboard, and email delivery are implemented and functional on Vercel Hobby.
-          The cron schedule is daily (Vercel Hobby limitation); per-site polling intervals and
-          Playwright-based JS rendering are staged for Phase 2.
-          Site adapters are seeded with realistic configuration but may need selector and
-          strip-pattern tuning once live data starts flowing.
-        </p>
       </div>
     </section>
 
     <footer>
-      <span class="footer-l">VisaWatch · Internal Architecture Doc</span>
+      <span class="footer-l">VisaWatch · Internal Docs</span>
       <span class="footer-r">v0.1 · April 2026</span>
     </footer>
 
