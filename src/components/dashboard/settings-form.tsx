@@ -50,10 +50,10 @@ export function SettingsForm({ userId, receivesAlerts: initial }: SettingsFormPr
         />
       </div>
 
-      <div className="p-3 rounded-lg bg-muted/30 border border-border/40 text-xs text-muted-foreground">
-        Alerts are sent for: <span className="text-amber-400">Notable</span>,{" "}
-        <span className="text-orange-400">Important</span>, and{" "}
-        <span className="text-red-400">Critical</span> changes only. Cosmetic/minor
+      <div className="p-3 rounded-lg bg-muted/40 border border-border text-xs text-muted-foreground">
+        Alerts are sent for: <span className="text-amber-700 font-medium">Notable</span>,{" "}
+        <span className="text-orange-700 font-medium">Important</span>, and{" "}
+        <span className="text-red-700 font-medium">Critical</span> changes only. Cosmetic/minor
         changes are logged on the dashboard but don&apos;t trigger emails.
       </div>
     </div>

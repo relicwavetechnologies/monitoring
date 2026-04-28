@@ -67,7 +67,7 @@ export default async function SiteDetailPage({ params }: { params: Promise<{ id:
           <div className="flex items-center gap-2.5 mb-1">
             <h1 className="text-xl font-semibold">{site.name}</h1>
             {site.isActive ? (
-              <Badge className="bg-emerald-950 text-emerald-400 border-emerald-800 text-[11px]">
+              <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[11px]">
                 <CheckCircle2 className="h-3 w-3 mr-1" />
                 Active
               </Badge>
@@ -178,7 +178,7 @@ export default async function SiteDetailPage({ params }: { params: Promise<{ id:
             </p>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div style={{ border: "1px solid var(--border, #E8E8F2)", borderRadius: 6, overflow: "hidden" }}>
             {changesWithSite.map((c) => (
               <ChangeCard key={c.id} change={c} showSite={false} />
             ))}

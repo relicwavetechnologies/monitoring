@@ -82,7 +82,7 @@ export default async function SitesPage() {
                       <div className="flex flex-col gap-0.5">
                         <Link
                           href={`/sites/${site.id}`}
-                          className="font-medium text-sm hover:text-blue-400 transition-colors"
+                          className="font-medium text-sm hover:text-violet-700 transition-colors"
                         >
                           {site.name}
                         </Link>
@@ -100,7 +100,7 @@ export default async function SitesPage() {
 
                     <TableCell>
                       {site.isActive ? (
-                        <div className="flex items-center gap-1.5 text-emerald-400 text-xs font-medium">
+                        <div className="flex items-center gap-1.5 text-emerald-600 text-xs font-medium">
                           <CheckCircle2 className="h-3.5 w-3.5" />
                           Active
                         </div>

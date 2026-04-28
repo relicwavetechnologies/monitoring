@@ -138,7 +138,7 @@ export function AdapterWizard() {
                 i < step
                   ? "bg-emerald-600 text-white"
                   : i === step
-                    ? "bg-blue-600 text-white"
+                    ? "bg-violet-600 text-white"
                     : "bg-muted text-muted-foreground"
               )}
             >
@@ -217,7 +217,7 @@ export function AdapterWizard() {
       {step === 2 && draft && (
         <>
           {suggestJs && (
-            <div className="flex items-start gap-2.5 p-3 bg-amber-950/40 border border-amber-900/60 rounded-lg text-sm text-amber-300">
+            <div className="flex items-start gap-2.5 p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
               <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
               <span>
                 The page HTML looks sparse — it may be JavaScript-rendered. Consider switching
@@ -336,8 +336,8 @@ export function AdapterWizard() {
               <Label className="text-xs text-muted-foreground uppercase tracking-wide">
                 Extracted Text Preview (first 2000 chars)
               </Label>
-              <ScrollArea className="h-48 rounded-lg border border-border/50 bg-[#0d0d0d]">
-                <pre className="p-4 text-xs font-mono text-zinc-400 whitespace-pre-wrap break-all">
+              <ScrollArea className="h-48 rounded-lg border border-border bg-card">
+                <pre className="p-4 text-xs font-mono text-foreground/70 whitespace-pre-wrap break-all">
                   {preview}
                 </pre>
               </ScrollArea>

@@ -1,4 +1,3 @@
-import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
 interface SeverityBadgeProps {
@@ -8,34 +7,51 @@ interface SeverityBadgeProps {
 
 const LABELS = ["", "Minimal", "Minor", "Notable", "Important", "Critical"];
 
-const STYLES: Record<number, string> = {
-  1: "bg-zinc-800 text-zinc-400 border-zinc-700",
-  2: "bg-zinc-800 text-zinc-300 border-zinc-600",
-  3: "bg-amber-950/80 text-amber-400 border-amber-800",
-  4: "bg-orange-950/80 text-orange-400 border-orange-800",
-  5: "bg-red-950/80 text-red-400 border-red-800",
+// Doc badge style: mono pill, colour-coded
+const STYLES: Record<number, { bg: string; color: string; border: string }> = {
+  1: { bg: "#F8FAFC", color: "#64748B", border: "#E2E8F0" },
+  2: { bg: "#F8FAFC", color: "#475569", border: "#CBD5E1" },
+  3: { bg: "#FEF3C7", color: "#92400E", border: "#FDE68A" },
+  4: { bg: "#FEE2E2", color: "#991B1B", border: "#FECACA" },
+  5: { bg: "#FEE2E2", color: "#7F1D1D", border: "#FCA5A5" },
 };
 
 export function SeverityBadge({ severity, className }: SeverityBadgeProps) {
   const s = Math.max(1, Math.min(5, severity));
+  const { bg, color, border } = STYLES[s];
   return (
-    <Badge
-      variant="outline"
-      className={cn("text-[11px] font-semibold tracking-wide border", STYLES[s], className)}
+    <span
+      className={cn("inline-block", className)}
+      style={{
+        padding: "2px 9px",
+        borderRadius: 100,
+        fontFamily: "var(--font-mono, monospace)",
+        fontSize: 9.5,
+        fontWeight: 500,
+        letterSpacing: "0.04em",
+        background: bg,
+        color,
+        border: `1px solid ${border}`,
+      }}
     >
       {LABELS[s]}
-    </Badge>
+    </span>
   );
 }
 
 export function SeverityDot({ severity }: { severity: number }) {
   const colors: Record<number, string> = {
-    1: "bg-zinc-600",
-    2: "bg-zinc-500",
-    3: "bg-amber-400",
-    4: "bg-orange-400",
-    5: "bg-red-500",
+    1: "#CBD5E1",
+    2: "#94A3B8",
+    3: "#D97706",
+    4: "#EF4444",
+    5: "#DC2626",
   };
   const s = Math.max(1, Math.min(5, severity));
-  return <span className={cn("inline-block h-2 w-2 rounded-full shrink-0", colors[s])} />;
+  return (
+    <span
+      className="inline-block shrink-0 rounded-full"
+      style={{ width: 8, height: 8, background: colors[s] }}
+    />
+  );
 }

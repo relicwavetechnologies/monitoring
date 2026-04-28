@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { SettingsForm } from "@/components/dashboard/settings-form";
+import { DigestButton } from "@/components/dashboard/digest-button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 
@@ -42,8 +43,10 @@ export default async function SettingsPage() {
             Control when and how you receive change notifications
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-6">
           {user && <SettingsForm userId={user.id} receivesAlerts={user.receivesAlerts} />}
+          <Separator />
+          <DigestButton email={user?.email ?? ""} />
         </CardContent>
       </Card>
 
@@ -62,7 +65,7 @@ export default async function SettingsPage() {
             ].map(({ label }) => (
               <div key={label} className="flex items-center justify-between">
                 <span className="text-muted-foreground">{label}</span>
-                <span className="text-xs text-emerald-400">Configured</span>
+                <span className="text-xs text-emerald-600 font-medium">Configured</span>
               </div>
             ))}
           </div>

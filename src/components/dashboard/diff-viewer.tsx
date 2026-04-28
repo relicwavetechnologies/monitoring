@@ -13,32 +13,53 @@ export function DiffViewer({ diffText, maxHeight = 480, className }: DiffViewerP
   const lines = diffText.split("\n");
 
   return (
-    <ScrollArea style={{ maxHeight }} className={cn("w-full rounded-lg border border-border/50 bg-[#0d0d0d]", className)}>
-      <div className="font-mono text-xs leading-6 p-4 min-w-0">
+    <div
+      style={{
+        maxHeight,
+        overflowY: "auto",
+        background: "var(--background-1, #F5F5FC)",
+        border: "1px solid var(--border, #E8E8F2)",
+        borderRadius: 6,
+      }}
+      className={cn("w-full", className)}
+    >
+      <div
+        style={{
+          fontFamily: "var(--font-mono, 'IBM Plex Mono', monospace)",
+          fontSize: 12,
+          lineHeight: 1.7,
+          padding: 16,
+        }}
+      >
         {lines.map((line, i) => {
-          const isAdded = line.startsWith("+ ");
+          const isAdded   = line.startsWith("+ ");
           const isRemoved = line.startsWith("- ");
-          const isContext = line.startsWith("  ");
           const isEllipsis = line.includes("... (");
 
           return (
             <div
               key={i}
-              className={cn(
-                "flex items-start px-2 rounded-sm",
-                isAdded && "bg-emerald-950/50 text-emerald-300",
-                isRemoved && "bg-red-950/50 text-red-300",
-                isEllipsis && "text-zinc-600 italic",
-                !isAdded && !isRemoved && !isEllipsis && "text-zinc-500"
-              )}
+              className="flex items-start"
+              style={{
+                borderRadius: 3,
+                padding: "1px 6px",
+                marginBottom: 1,
+                background: isAdded ? "#D1FAE5" : isRemoved ? "#FEE2E2" : undefined,
+                color: isAdded
+                  ? "#065F46"
+                  : isRemoved
+                    ? "#991B1B"
+                    : isEllipsis
+                      ? "#9494B0"
+                      : "#5A5A7A",
+                fontStyle: isEllipsis ? "italic" : undefined,
+              }}
             >
               <span
-                className={cn(
-                  "select-none w-4 shrink-0 mr-2 text-right",
-                  isAdded && "text-emerald-600",
-                  isRemoved && "text-red-600",
-                  !isAdded && !isRemoved && "text-zinc-700"
-                )}
+                className="select-none w-4 shrink-0 mr-2 text-right"
+                style={{
+                  color: isAdded ? "#059669" : isRemoved ? "#DC2626" : "#D4D4E8",
+                }}
               >
                 {isAdded ? "+" : isRemoved ? "−" : " "}
               </span>
@@ -47,9 +68,9 @@ export function DiffViewer({ diffText, maxHeight = 480, className }: DiffViewerP
           );
         })}
         {lines.length === 0 && (
-          <p className="text-zinc-600 italic">No diff available.</p>
+          <p style={{ color: "#9494B0", fontStyle: "italic" }}>No diff available.</p>
         )}
       </div>
-    </ScrollArea>
+    </div>
   );
 }

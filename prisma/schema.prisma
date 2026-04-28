@@ -113,6 +113,7 @@ model Change {
   summary        String
   detail         String?        @db.Text
   diffText       String         @db.Text
+  sourceUrl      String?        // optional link to the source page / news article for this change
   emailSent      Boolean        @default(false)
   detectedAt     DateTime       @default(now())
   site           Site           @relation(fields: [siteId], references: [id], onDelete: Cascade)

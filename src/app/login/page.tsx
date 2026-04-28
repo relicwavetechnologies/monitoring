@@ -59,10 +59,10 @@ function LoginForm() {
 
   if (verify || sent) {
     return (
-      <Card className="bg-card border-border/50 shadow-2xl shadow-black/40">
+      <Card className="bg-card border-border shadow-xl shadow-violet-900/5">
         <CardContent className="pt-8 pb-8 px-8 flex flex-col items-center text-center gap-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-600/20 border border-emerald-600/30">
-            <CheckCircle2 className="h-6 w-6 text-emerald-400" />
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-50 border border-emerald-200">
+            <CheckCircle2 className="h-6 w-6 text-emerald-600" />
           </div>
           <div>
             <h2 className="text-lg font-semibold">Check your email</h2>
@@ -80,7 +80,7 @@ function LoginForm() {
   }
 
   return (
-    <Card className="bg-card border-border/50 shadow-2xl shadow-black/40">
+    <Card className="bg-card border-border shadow-xl shadow-violet-900/5">
       <CardHeader className="pb-4">
         <CardTitle className="text-lg">Sign in</CardTitle>
         <CardDescription>
@@ -89,7 +89,7 @@ function LoginForm() {
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Tab toggle */}
-        <div className="flex rounded-lg border border-border/50 p-1 gap-1 bg-muted/20">
+        <div className="flex rounded-lg border border-border p-1 gap-1 bg-muted/40">
           <button
             type="button"
             onClick={() => { setTab("password"); setError(""); }}
@@ -122,7 +122,7 @@ function LoginForm() {
                   placeholder="you@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="pl-9 bg-muted/30 border-border/50"
+                  className="pl-9 bg-muted/40 border-border"
                   required
                   autoFocus
                 />
@@ -138,13 +138,13 @@ function LoginForm() {
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="pl-9 bg-muted/30 border-border/50"
+                  className="pl-9 bg-muted/40 border-border"
                   required
                 />
               </div>
             </div>
             {error && (
-              <div className="flex items-center gap-2 text-xs text-destructive">
+              <div className="flex items-center gap-2 text-xs text-red-700 bg-red-50 border border-red-200 rounded-md px-2.5 py-2">
                 <AlertCircle className="h-3.5 w-3.5 shrink-0" />
                 {error}
               </div>
@@ -165,7 +165,7 @@ function LoginForm() {
                   placeholder="you@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="pl-9 bg-muted/30 border-border/50"
+                  className="pl-9 bg-muted/40 border-border"
                   required
                   autoFocus
                 />
@@ -184,11 +184,11 @@ function LoginForm() {
 export default function LoginPage() {
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-950/20 via-transparent to-transparent pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-br from-violet-50/60 via-transparent to-transparent pointer-events-none" />
 
       <div className="relative w-full max-w-sm space-y-6">
         <div className="flex flex-col items-center gap-3 text-center">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-violet-600 shadow-xl shadow-violet-900/50 ring-1 ring-violet-500/30">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-violet-600 shadow-md shadow-violet-300/50 ring-1 ring-violet-300/40">
             <Shield className="h-6 w-6 text-white" />
           </div>
           <div>

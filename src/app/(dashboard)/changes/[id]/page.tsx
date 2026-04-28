@@ -45,7 +45,7 @@ export default async function ChangePage({ params }: { params: Promise<{ id: str
 
       {/* Header */}
       {isHighSeverity && (
-        <div className="flex items-center gap-2 p-3 bg-red-950/40 border border-red-900/60 rounded-lg mb-4 text-sm text-red-300">
+        <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg mb-4 text-sm text-red-700">
           <AlertTriangle className="h-4 w-4 shrink-0" />
           This is a high-severity change that may affect visa applications.
         </div>
@@ -58,7 +58,7 @@ export default async function ChangePage({ params }: { params: Promise<{ id: str
             {CATEGORY_LABELS[change.category]}
           </Badge>
           {change.emailSent && (
-            <Badge variant="outline" className="text-[11px] bg-blue-950/50 text-blue-400 border-blue-800">
+            <Badge variant="outline" className="text-[11px] bg-blue-50 text-blue-700 border-blue-200">
               <Mail className="h-3 w-3 mr-1" />
               Alert Sent
             </Badge>
@@ -82,7 +82,7 @@ export default async function ChangePage({ params }: { params: Promise<{ id: str
               <p className="text-xs text-muted-foreground mb-1">Monitored Site</p>
               <Link
                 href={`/sites/${change.siteId}`}
-                className="text-sm font-medium hover:text-blue-400 transition-colors"
+                className="text-sm font-medium hover:text-violet-700 transition-colors"
               >
                 {change.site.name}
               </Link>
@@ -92,7 +92,7 @@ export default async function ChangePage({ params }: { params: Promise<{ id: str
               <div className="flex items-center gap-2">
                 <div className="h-1.5 w-20 bg-muted rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-blue-500 rounded-full"
+                    className="h-full bg-violet-500 rounded-full"
                     style={{ width: `${confidencePct}%` }}
                   />
                 </div>

@@ -1,10 +1,6 @@
 import Link from "next/link";
 import { formatDistanceToNow } from "@/lib/time";
-import { SeverityBadge, SeverityDot } from "./severity-badge";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { ExternalLink, ArrowRight } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { ExternalLink } from "lucide-react";
 import { ChangeCategory } from "@/generated/prisma/enums";
 
 interface ChangeCardProps {
@@ -23,77 +19,122 @@ interface ChangeCardProps {
 }
 
 const CATEGORY_LABELS: Record<ChangeCategory, string> = {
-  POLICY_CHANGE: "Policy",
-  FEE_CHANGE: "Fee",
-  APPOINTMENT: "Appointment",
+  POLICY_CHANGE:        "Policy",
+  FEE_CHANGE:           "Fee",
+  APPOINTMENT:          "Appointment",
   DOCUMENT_REQUIREMENT: "Documents",
-  NAVIGATION: "Navigation",
-  COSMETIC: "Cosmetic",
-  UNKNOWN: "Unknown",
+  NAVIGATION:           "Navigation",
+  COSMETIC:             "Cosmetic",
+  UNKNOWN:              "Unknown",
+};
+
+// Accent-line colour for severity — just a thin strip, nothing more
+const SEV_COLOR: Record<number, string> = {
+  1: "#D4D4E8",
+  2: "#9494B0",
+  3: "#D97706",
+  4: "#EF4444",
+  5: "#DC2626",
+};
+
+const SEV_LABEL: Record<number, string> = {
+  1: "minimal",
+  2: "minor",
+  3: "notable",
+  4: "important",
+  5: "critical",
 };
 
 export function ChangeCard({ change, showSite = true }: ChangeCardProps) {
-  const isHighSeverity = change.severity >= 4;
-  const isAlertSent = change.emailSent;
+  const sev = Math.max(1, Math.min(5, change.severity));
+  const accentColor = SEV_COLOR[sev];
 
   return (
-    <Card
-      className={cn(
-        "group relative overflow-hidden transition-all border bg-card hover:shadow-md",
-        isHighSeverity && "border-l-4 border-l-red-500"
-      )}
+    <div
+      className="group relative flex gap-0"
+      style={{ borderBottom: "1px solid var(--border, #E8E8F2)" }}
     >
-      <CardContent className="p-4">
-        <div className="flex items-start gap-3">
-          <SeverityDot severity={change.severity} />
-          <div className="flex-1 min-w-0">
-            {/* Meta row */}
-            <div className="flex flex-wrap items-center gap-2 mb-1.5">
-              <SeverityBadge severity={change.severity} />
-              <Badge variant="outline" className="text-[11px] bg-muted/50 border-border/50">
-                {CATEGORY_LABELS[change.category]}
-              </Badge>
-              {isAlertSent && (
-                <Badge variant="outline" className="text-[11px] bg-blue-950/50 text-blue-400 border-blue-800">
-                  Alerted
-                </Badge>
-              )}
-              <span className="text-[11px] text-muted-foreground ml-auto">
-                {formatDistanceToNow(change.detectedAt)}
-              </span>
-            </div>
+      {/* Left severity strip — 2px, full height */}
+      <div
+        className="shrink-0 w-0.5 rounded-full my-4"
+        style={{ background: accentColor, marginLeft: 0 }}
+      />
 
-            {/* Summary */}
-            <p className="text-sm font-medium text-foreground leading-snug">
-              {change.summary}
-            </p>
+      {/* Content */}
+      <div className="flex-1 py-4 px-4 min-w-0">
+        {/* Top meta row */}
+        <div className="flex items-center gap-2 mb-2">
+          {/* Site name */}
+          {showSite && (
+            <Link
+              href={`/sites/${change.site.id}`}
+              className="flex items-center gap-1 transition-colors"
+              style={{ fontFamily: "var(--font-mono, monospace)", fontSize: 11, color: "var(--foreground-3, #9494B0)" }}
+            >
+              {change.site.name}
+              <ExternalLink size={10} />
+            </Link>
+          )}
 
-            {/* Detail */}
-            {change.detail && (
-              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{change.detail}</p>
-            )}
+          {/* Category — mono uppercase, no background */}
+          <span
+            style={{
+              fontFamily: "var(--font-mono, monospace)",
+              fontSize: 10,
+              fontWeight: 600,
+              textTransform: "uppercase",
+              letterSpacing: "0.12em",
+              color: accentColor,
+            }}
+          >
+            {CATEGORY_LABELS[change.category]}
+          </span>
 
-            {/* Footer */}
-            <div className="flex items-center gap-3 mt-2.5">
-              {showSite && (
-                <Link
-                  href={`/sites/${change.site.id}`}
-                  className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  <span className="font-medium">{change.site.name}</span>
-                  <ExternalLink className="h-3 w-3" />
-                </Link>
-              )}
-              <Link
-                href={`/changes/${change.id}`}
-                className="ml-auto flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 transition-colors opacity-0 group-hover:opacity-100"
-              >
-                View diff <ArrowRight className="h-3 w-3" />
-              </Link>
-            </div>
-          </div>
+          {/* Severity label — only when notable+ */}
+          {sev >= 3 && (
+            <span
+              style={{
+                fontFamily: "var(--font-mono, monospace)",
+                fontSize: 10,
+                color: "var(--foreground-3, #9494B0)",
+              }}
+            >
+              · {SEV_LABEL[sev]}
+            </span>
+          )}
+
+          {/* Timestamp — pushed right */}
+          <span
+            className="ml-auto"
+            style={{ fontFamily: "var(--font-mono, monospace)", fontSize: 10, color: "var(--foreground-3, #9494B0)" }}
+          >
+            {formatDistanceToNow(change.detectedAt)}
+          </span>
         </div>
-      </CardContent>
-    </Card>
+
+        {/* Summary — the main event */}
+        <Link href={`/changes/${change.id}`} className="group/link block">
+          <p
+            className="text-sm font-semibold leading-snug transition-colors group-hover/link:underline"
+            style={{
+              color: "var(--foreground, #0D0D1C)",
+              textUnderlineOffset: 2,
+            }}
+          >
+            {change.summary}
+          </p>
+        </Link>
+
+        {/* Detail — one line, muted */}
+        {change.detail && (
+          <p
+            className="mt-1 line-clamp-1"
+            style={{ fontSize: 13, color: "var(--foreground-2, #5A5A7A)", lineHeight: 1.55 }}
+          >
+            {change.detail}
+          </p>
+        )}
+      </div>
+    </div>
   );
 }
