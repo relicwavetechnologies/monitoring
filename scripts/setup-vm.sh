@@ -29,20 +29,31 @@ chmod +x "$APP_DIR/cron-call.sh"
 
 if [[ ! -f "$APP_DIR/.env" ]]; then
   cat > "$APP_DIR/.env" <<'EOF'
-# Required
+# ── Database (Neon) ──────────────────────────────────────────────────────────
 DATABASE_URL=
-NEXTAUTH_URL=http://YOUR_VM_IP
-NEXTAUTH_SECRET=
-CRON_SECRET=
-OPENAI_API_KEY=
-RESEND_API_KEY=
+DIRECT_URL=
 
-# Optional / has defaults
-OPENAI_BASE_URL=https://gateway-v21w.onrender.com/v1
+# ── Auth (NextAuth v5) ───────────────────────────────────────────────────────
+AUTH_SECRET=
+AUTH_URL=http://YOUR_VM_IP
+
+# ── Email (Resend) ───────────────────────────────────────────────────────────
+RESEND_API_KEY=
+AUTH_RESEND_KEY=
 RESEND_FROM=onboarding@resend.dev
+
+# ── AI Gateway ───────────────────────────────────────────────────────────────
+OPENAI_API_KEY=
+OPENAI_BASE_URL=https://gateway-v21w.onrender.com/v1
+
+# ── Discovery ────────────────────────────────────────────────────────────────
 SERPER_API_KEY=
-# Comma-separated whitelist of emails allowed to sign in. Empty = anyone.
-ALLOWED_EMAILS=
+
+# ── Cron security ────────────────────────────────────────────────────────────
+CRON_SECRET=
+
+# ── Optional sign-in whitelist (empty = anyone) ──────────────────────────────
+# ALLOWED_EMAILS=you@example.com,team@example.com
 EOF
   chmod 600 "$APP_DIR/.env"
   echo "==> Created $APP_DIR/.env stub — edit it with real values before continuing"
