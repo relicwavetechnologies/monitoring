@@ -1,0 +1,17 @@
+node_modules
+.next
+.git
+.github
+.claude
+.vercel
+.env*
+*.log
+README.md
+AGENTS.md
+CLAUDE.md
+doc
+src/generated
+.DS_Store
+coverage
+build
+out
