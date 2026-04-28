@@ -7,19 +7,22 @@ APP_DIR="/opt/visa-monitoring"
 REPO_RAW="https://raw.githubusercontent.com/relicwavetechnologies/monitoring/main"
 
 if [[ "$EUID" -eq 0 ]]; then
-  echo "Run this as a regular user with sudo, not as root." >&2
-  exit 1
+  SUDO=""
+else
+  SUDO="sudo"
 fi
 
 echo "==> Installing Docker"
 if ! command -v docker >/dev/null 2>&1; then
-  curl -fsSL https://get.docker.com | sudo sh
+  curl -fsSL https://get.docker.com | $SUDO sh
 fi
-sudo usermod -aG docker "$USER" || true
+if [[ -n "$SUDO" ]]; then
+  $SUDO usermod -aG docker "$USER" || true
+fi
 
 echo "==> Creating $APP_DIR"
-sudo mkdir -p "$APP_DIR"
-sudo chown "$USER":"$USER" "$APP_DIR"
+$SUDO mkdir -p "$APP_DIR"
+$SUDO chown "$USER":"$USER" "$APP_DIR"
 
 echo "==> Fetching deployment files"
 curl -fsSL "$REPO_RAW/docker-compose.yml" -o "$APP_DIR/docker-compose.yml"
@@ -71,13 +74,13 @@ cat >> "$CRON_TMP" <<EOF
 EOF
 crontab "$CRON_TMP"
 rm "$CRON_TMP"
-sudo touch /var/log/visa-cron.log
-sudo chown "$USER":"$USER" /var/log/visa-cron.log
+$SUDO touch /var/log/visa-cron.log
+$SUDO chown "$USER":"$USER" /var/log/visa-cron.log
 
 echo
 echo "Done. Next steps:"
-echo "  1. Log out and back in (so docker group takes effect)"
-echo "  2. Edit $APP_DIR/.env with real secrets"
-echo "  3. Add GitHub repo secrets (see CI workflow):"
-echo "       SSH_HOST, SSH_USER, SSH_KEY, DATABASE_URL"
-echo "  4. Push to main — first deploy will run automatically"
+echo "  1. Edit $APP_DIR/.env with real secrets"
+if [[ -n "$SUDO" ]]; then
+  echo "  2. Log out and back in (so docker group takes effect)"
+fi
+echo "  3. Trigger the deploy workflow on GitHub (Actions → deploy → Run workflow)"
