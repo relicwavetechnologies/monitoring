@@ -23,5 +23,5 @@ fi
 echo "[$(date -Is)] cron-call: $ENDPOINT"
 curl -fsS --max-time 600 \
   -H "Authorization: Bearer $CRON_SECRET" \
-  "http://localhost/api/cron/$ENDPOINT"
+  "http://localhost:9000/api/cron/$ENDPOINT"
 echo
