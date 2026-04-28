@@ -80,8 +80,7 @@ export function Topbar() {
         <DropdownMenu>
           <DropdownMenuTrigger className="rounded-full focus:outline-none focus-visible:ring-2">
             <Avatar
-              className="h-8 w-8 cursor-pointer transition-all"
-              style={{ ring: "2px solid var(--border-2)" }}
+              className="h-8 w-8 cursor-pointer transition-all ring-2 ring-[var(--border-2)]"
             >
               <AvatarFallback
                 className="text-xs font-semibold text-white"
