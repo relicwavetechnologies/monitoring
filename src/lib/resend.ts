@@ -1,6 +1,10 @@
 import { Resend } from "resend";
 
-export const resend = new Resend(process.env.RESEND_API_KEY);
+let _resend: Resend | null = null;
+function getResend(): Resend {
+  if (!_resend) _resend = new Resend(process.env.RESEND_API_KEY);
+  return _resend;
+}
 
 function esc(s: string) {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -210,7 +214,7 @@ export async function sendChangeAlert(params: {
     baseUrl
   );
 
-  await resend.emails.send({
+  await getResend().emails.send({
     from: process.env.RESEND_FROM ?? "onboarding@resend.dev",
     to: emails,
     subject: `[${label}] ${params.siteName}: ${params.summary.slice(0, 80)}`,
@@ -247,7 +251,7 @@ export async function sendDigest(recipientEmail: string): Promise<{ count: numbe
 
   const html = buildDigestHtml(payload, baseUrl);
 
-  await resend.emails.send({
+  await getResend().emails.send({
     from: process.env.RESEND_FROM ?? "onboarding@resend.dev",
     to: [recipientEmail],
     subject: `VisaWatch digest — ${changes.length} important visa change${changes.length !== 1 ? "s" : ""}`,
