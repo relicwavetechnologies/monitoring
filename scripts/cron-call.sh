@@ -13,7 +13,7 @@ if [[ ! -r "$ENV_FILE" ]]; then
   exit 1
 fi
 
-CRON_SECRET=$(grep -E '^CRON_SECRET=' "$ENV_FILE" | head -n1 | cut -d= -f2-)
+CRON_SECRET=$(grep -E '^CRON_SECRET=' "$ENV_FILE" | head -n1 | cut -d= -f2- | sed -e 's/^["'\'']//' -e 's/["'\'']$//')
 
 if [[ -z "$CRON_SECRET" ]]; then
   echo "[$(date -Is)] cron-call: CRON_SECRET not set in $ENV_FILE" >&2
