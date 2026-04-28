@@ -1,4 +1,5 @@
 import type { RenderMode } from "@/generated/prisma/enums";
+import { fetch as undiciFetch, Agent } from "undici";
 
 export interface FetchResult {
   html: string;
@@ -13,6 +14,11 @@ const HEADERS = {
   "Cache-Control": "no-cache",
 };
 
+// Use undici directly so we can raise the response header size limit (maxHeaderSize).
+// Default undici cap is 16 KB — some gov sites (e.g. US Embassy)
+// return header payloads that exceed this, causing UND_ERR_HEADERS_OVERFLOW.
+const dispatcher = new Agent({ maxHeaderSize: 65536 });
+
 export async function fetchSite(url: string, mode: RenderMode): Promise<FetchResult> {
   if (mode === "JS") {
     return fetchWithPlaywright(url);
@@ -21,11 +27,11 @@ export async function fetchSite(url: string, mode: RenderMode): Promise<FetchRes
 }
 
 async function fetchStatic(url: string): Promise<FetchResult> {
-  const res = await fetch(url, {
+  const res = await undiciFetch(url, {
     headers: HEADERS,
     redirect: "follow",
-    next: { revalidate: 0 },
-  });
+    dispatcher,
+  } as Parameters<typeof undiciFetch>[1]);
   const html = await res.text();
   return { html, status: res.status };
 }

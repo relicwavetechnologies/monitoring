@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { ChangeCard } from "@/components/dashboard/change-card";
+import { AiNoticeCards } from "@/components/dashboard/ai-notice-cards";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Suspense } from "react";
 import { CheckCircle2 } from "lucide-react";
@@ -196,6 +197,25 @@ export default function OverviewPage() {
         }
       >
         <StatsRow />
+      </Suspense>
+
+      <Suspense
+        fallback={
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
+              gap: 10,
+              marginBottom: 40,
+            }}
+          >
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-24 rounded-md" />
+            ))}
+          </div>
+        }
+      >
+        <AiNoticeCards />
       </Suspense>
 
       <Suspense

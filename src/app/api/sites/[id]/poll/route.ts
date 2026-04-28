@@ -11,10 +11,10 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
   const result = await runPoll(id);
 
   if (result.status === "not_found")
-    return NextResponse.json({ error: "Site not found or inactive" }, { status: 404 });
+    return NextResponse.json({ status: "not_found", error: "Site not found or inactive" }, { status: 404 });
 
   if (result.status === "fetch_failed")
-    return NextResponse.json({ error: result.error }, { status: 500 });
+    return NextResponse.json({ status: "fetch_failed", error: result.error }, { status: 500 });
 
   return NextResponse.json(result);
 }

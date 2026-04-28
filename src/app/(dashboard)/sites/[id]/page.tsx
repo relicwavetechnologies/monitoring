@@ -1,3 +1,5 @@
+import { gunzipSync } from "zlib";
+import { marked } from "marked";
 import { db } from "@/lib/db";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -7,7 +9,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { ChangeCard } from "@/components/dashboard/change-card";
 import { SiteActionButtons } from "@/components/dashboard/site-action-buttons";
-import { formatDistanceToNow, formatDate } from "@/lib/time";
+import { AnalyzeButton } from "@/components/dashboard/analyze-button";
+import { formatDistanceToNow } from "@/lib/time";
 import {
   ArrowLeft,
   Globe,
@@ -17,7 +20,12 @@ import {
   XCircle,
   ExternalLink,
   Settings2,
+  FileText,
+  Sparkles,
 } from "lucide-react";
+
+// Configure marked for clean output
+marked.setOptions({ gfm: true, breaks: false });
 
 export default async function SiteDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -45,6 +53,28 @@ export default async function SiteDetailPage({ params }: { params: Promise<{ id:
   });
 
   if (!site) notFound();
+
+  // Latest snapshot extracted text
+  const latestSnapshot = await db.snapshot.findFirst({
+    where: { siteId: id },
+    orderBy: { fetchedAt: "desc" },
+    select: { textGz: true, fetchedAt: true },
+  });
+
+  let extractedText: string | null = null;
+  if (latestSnapshot?.textGz) {
+    try {
+      extractedText = gunzipSync(Buffer.from(latestSnapshot.textGz)).toString("utf8");
+    } catch {
+      extractedText = null;
+    }
+  }
+
+  // Render AI analysis markdown → HTML
+  let analysisHtml: string | null = null;
+  if (site.aiAnalysis) {
+    analysisHtml = await Promise.resolve(marked.parse(site.aiAnalysis));
+  }
 
   const recentChanges = site.changes;
   const siteForCard = { id: site.id, name: site.name, url: site.url };
@@ -94,21 +124,9 @@ export default async function SiteDetailPage({ params }: { params: Promise<{ id:
       {/* Stats cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
         {[
-          {
-            label: "Total Changes",
-            value: site._count.changes,
-            icon: BarChart2,
-          },
-          {
-            label: "Snapshots",
-            value: site._count.snapshots,
-            icon: Globe,
-          },
-          {
-            label: "Poll Every",
-            value: `${site.pollIntervalMin}m`,
-            icon: Clock,
-          },
+          { label: "Total Changes", value: site._count.changes, icon: BarChart2 },
+          { label: "Snapshots", value: site._count.snapshots, icon: Globe },
+          { label: "Poll Every", value: `${site.pollIntervalMin}m`, icon: Clock },
           {
             label: "Last Check",
             value: site.lastCheckedAt ? formatDistanceToNow(site.lastCheckedAt) : "Never",
@@ -145,10 +163,7 @@ export default async function SiteDetailPage({ params }: { params: Promise<{ id:
               { label: "Poll Interval", value: `${site.pollIntervalMin} minutes` },
               {
                 label: "Strip Patterns",
-                value:
-                  site.stripPatterns.length > 0
-                    ? site.stripPatterns.join(", ")
-                    : "None",
+                value: site.stripPatterns.length > 0 ? site.stripPatterns.join(", ") : "None",
               },
             ].map(({ label, value }) => (
               <div key={label} className="flex items-start gap-4">
@@ -159,6 +174,92 @@ export default async function SiteDetailPage({ params }: { params: Promise<{ id:
           </CardContent>
         </Card>
       </details>
+
+      <Separator className="mb-8" />
+
+      {/* ── Captured Content ── */}
+      <div className="mb-8">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <FileText className="h-4 w-4 text-muted-foreground" />
+            <h2 className="text-sm font-semibold">Captured Content</h2>
+          </div>
+          {latestSnapshot?.fetchedAt && (
+            <span className="text-xs text-muted-foreground">
+              Snapshot from {formatDistanceToNow(latestSnapshot.fetchedAt)}
+            </span>
+          )}
+        </div>
+
+        {extractedText ? (
+          <details className="group">
+            <summary className="flex items-center gap-2 cursor-pointer text-xs text-muted-foreground hover:text-foreground transition-colors list-none px-4 py-3 rounded-lg border border-border/50 bg-muted/20">
+              <span className="font-mono">
+                {extractedText.length.toLocaleString()} characters extracted
+              </span>
+              <span className="ml-auto group-open:hidden">Expand ↓</span>
+              <span className="ml-auto hidden group-open:inline">Collapse ↑</span>
+            </summary>
+            <div className="mt-2 rounded-lg border border-border/50 bg-muted/10 overflow-hidden">
+              <pre className="p-4 text-xs font-mono text-muted-foreground whitespace-pre-wrap break-words overflow-y-auto max-h-[400px] leading-relaxed">
+                {extractedText}
+              </pre>
+            </div>
+          </details>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-10 border border-dashed border-border/50 rounded-xl text-center">
+            <FileText className="h-7 w-7 text-muted-foreground mb-2" />
+            <p className="text-sm font-medium">No content captured yet</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Poll this site to capture its first snapshot.
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* ── AI Analysis ── */}
+      <div className="mb-8">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-violet-500" />
+            <h2 className="text-sm font-semibold">AI Analysis</h2>
+            {site.aiAnalysisAt && (
+              <span className="text-xs text-muted-foreground">
+                · Last run {formatDistanceToNow(site.aiAnalysisAt)}
+              </span>
+            )}
+          </div>
+          {extractedText && <AnalyzeButton siteId={site.id} />}
+        </div>
+
+        {analysisHtml ? (
+          <Card className="bg-card border-border/50">
+            <CardContent className="p-5">
+              <div
+                className="analysis-body"
+                dangerouslySetInnerHTML={{ __html: analysisHtml }}
+              />
+            </CardContent>
+          </Card>
+        ) : extractedText ? (
+          <div className="flex flex-col items-center justify-center py-10 border border-dashed border-border/50 rounded-xl text-center">
+            <Sparkles className="h-7 w-7 text-muted-foreground mb-2" />
+            <p className="text-sm font-medium">No analysis yet</p>
+            <p className="text-xs text-muted-foreground mt-1 mb-3">
+              Click &ldquo;Analyze with AI&rdquo; to extract visa-relevant information.
+            </p>
+            <AnalyzeButton siteId={site.id} />
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-10 border border-dashed border-border/50 rounded-xl text-center">
+            <Sparkles className="h-7 w-7 text-muted-foreground mb-2" />
+            <p className="text-sm font-medium">Poll the site first</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Analysis requires a snapshot to be captured.
+            </p>
+          </div>
+        )}
+      </div>
 
       <Separator className="mb-8" />
 

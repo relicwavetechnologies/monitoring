@@ -23,6 +23,7 @@ export const openai = new Proxy({} as OpenAI, {
 
 // Model aliases — map to your gateway's available models
 export const MODELS = {
-  fast: "gpt-5.4-mini",   // classification (cheap + fast)
-  best: "gpt-5.4",         // adapter bootstrap + low-confidence retry
+  fast: "gemini-3-flash-lite-preview",  // classification — fast + cheap
+  best: "gemini-3-flash-lite-preview",  // low-confidence retry (same tier, escalate if needed)
+  gemini: "gemini-3-flash-preview",     // site analysis — large context, smarter
 } as const;
