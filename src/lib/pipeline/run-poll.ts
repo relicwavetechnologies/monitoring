@@ -11,6 +11,8 @@ import { computeBlockDiff } from "@/lib/pipeline/diff-blocks";
 import { checkStability } from "@/lib/pipeline/stability";
 import { classifyChange, type ClassifyResult } from "@/lib/pipeline/classify";
 import { maybeNotify } from "@/lib/pipeline/notify";
+import { shouldMute } from "@/lib/pipeline/mute";
+import { deliverToSubscribers } from "@/lib/pipeline/subscriptions";
 import { ChangeCategory } from "@/generated/prisma/enums";
 import { getLogger } from "@/lib/logger";
 
@@ -356,6 +358,21 @@ export async function runPoll(monitoredUrlId: string): Promise<PollResult> {
     const fromContentHash = prevSnapshot.contentHash;
     const toContentHash = newHash;
 
+    // Phase 7: per-URL mute patterns. Muted changes are still recorded
+    // for audit but never trigger notifications.
+    const muteCheck = shouldMute({
+      summary: classification.summary,
+      detail: classification.detail,
+      category: classification.category,
+      mutePatterns: url.mutePatterns,
+    });
+    if (muteCheck.muted) {
+      plog.info(
+        { matchedPattern: muteCheck.matchedPattern },
+        "change auto-muted by URL mutePatterns"
+      );
+    }
+
     let change;
     try {
       change = await db.change.create({
@@ -372,6 +389,7 @@ export async function runPoll(monitoredUrlId: string): Promise<PollResult> {
           summary: classification.summary,
           detail: classification.detail,
           diffText: diffResult.unified,
+          muted: muteCheck.muted,
           // Phase 3 metadata
           classifierStatus: classification.status,
           evidenceQuotes: classification.evidenceQuotes,
@@ -397,7 +415,19 @@ export async function runPoll(monitoredUrlId: string): Promise<PollResult> {
       throw err;
     }
 
-    await maybeNotify(change.id);
+    // Phase 7: subscriber delivery (per-channel). Skipped when muted.
+    if (!muteCheck.muted) {
+      try {
+        const delivery = await deliverToSubscribers(change.id);
+        plog.info({ changeId: change.id, ...delivery }, "subscriber delivery");
+      } catch (err) {
+        plog.warn({ err, changeId: change.id }, "subscriber delivery threw — continuing");
+      }
+      // Phase 1 single-recipient email path stays as a backstop for
+      // installations that haven't migrated their User.receivesAlerts to
+      // explicit Subscriptions yet.
+      await maybeNotify(change.id);
+    }
 
     return { status: "change_detected", changeId: change.id, classification };
   } catch (err) {

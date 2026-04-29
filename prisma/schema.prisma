@@ -42,9 +42,41 @@ model User {
   emailVerified  DateTime?
   image          String?
   password       String?
+  /// Phase 7: legacy global flag, replaced by per-Site/per-URL Subscription
+  /// rows. Kept for migration compat — existing rows with receivesAlerts =
+  /// true get one Subscription per active Site at migration time.
   receivesAlerts Boolean   @default(true)
   accounts       Account[]
   sessions       Session[]
+  subscriptions  Subscription[]
+}
+
+/// Per-user, per-Site or per-MonitoredUrl alert subscription.
+/// Phase 7: replaces the global User.receivesAlerts boolean. A Subscription
+/// scoped to a Site delivers for any change under that site; scoped to a
+/// MonitoredUrl, only that URL's changes.
+model Subscription {
+  id             String        @id @default(cuid())
+  userId         String
+  /// Either siteId or monitoredUrlId is set, not both. (Composite check
+  /// is enforced in app code; Prisma 7 doesn't yet expose CHECK
+  /// constraints.)
+  siteId         String?
+  monitoredUrlId String?
+  channel        AlertChannel  @default(EMAIL)
+  /// Override the site's severityThreshold for this subscriber. NULL means
+  /// "use the site default".
+  minSeverity    Int?
+  /// Slack webhook URL or generic webhook URL. NULL for EMAIL channel.
+  webhookUrl     String?       @db.Text
+  paused         Boolean       @default(false)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, siteId, monitoredUrlId, channel], map: "Subscription_unique")
+  @@index([siteId, paused])
+  @@index([monitoredUrlId, paused])
 }
 
 model VerificationToken {
@@ -92,6 +124,13 @@ enum FailureKind {
   TIMEOUT
   PARSE
   OTHER
+}
+
+/// Phase 7: per-subscription delivery channel.
+enum AlertChannel {
+  EMAIL
+  SLACK
+  WEBHOOK
 }
 
 enum ChangeCategory {
@@ -204,6 +243,10 @@ model MonitoredUrl {
   /// kicks in. Tuned per-URL — chatty sites can be set higher to avoid
   /// premature escalation.
   escalateAfterFailures Int           @default(3)
+  /// Phase 7: regex patterns that, when matched against a Change's
+  /// summary, auto-mute the Change. Useful for "this site keeps re-issuing
+  /// the same news article every Monday".
+  mutePatterns          String[]      @default([])
   /// `true` skips this URL on the next cron tick without removing the row.
   paused          Boolean    @default(false)
   lastCheckedAt   DateTime?
@@ -319,6 +362,13 @@ model Change {
   /// What severity the LLM originally returned, before any clamp. Lets us
   /// see how often rules are overriding the model.
   classifierRawSeverity  Int?
+  // Phase 7: mute / acknowledge.
+  /// User-acknowledged: stops further notifications about this change.
+  acknowledgedAt   DateTime?
+  acknowledgedById String?
+  /// True when this change matched a MonitoredUrl.mutePatterns entry; the
+  /// row exists for the audit trail but no notifications fire.
+  muted            Boolean       @default(false)
   detectedAt         DateTime       @default(now())
   monitoredUrl       MonitoredUrl   @relation(fields: [monitoredUrlId], references: [id], onDelete: Cascade)
   site               Site           @relation(fields: [siteId], references: [id], onDelete: Cascade)
