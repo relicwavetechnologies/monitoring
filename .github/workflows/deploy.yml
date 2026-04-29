@@ -75,9 +75,18 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
-          set -e
+          # Critical: pipefail so `prisma | tee` propagates prisma's exit
+          # code instead of tee's. Without this the script always thinks
+          # the migration succeeded.
+          set -eo pipefail
           OUT=$(mktemp)
-          if pnpm exec prisma migrate deploy --schema prisma/schema.prisma 2>&1 | tee "$OUT"; then
+          # Disable -e for the first attempt — we need to inspect a
+          # failure rather than die on it.
+          set +e
+          pnpm exec prisma migrate deploy --schema prisma/schema.prisma 2>&1 | tee "$OUT"
+          RC=${PIPESTATUS[0]}
+          set -e
+          if [ "$RC" -eq 0 ]; then
             echo "Migrations applied cleanly."
             exit 0
           fi
@@ -88,7 +97,7 @@ jobs:
             exit 0
           fi
           echo "Migration failed for a non-P3005 reason — see logs above."
-          exit 1
+          exit "$RC"
 
       - name: Deploy over SSH
         uses: appleboy/ssh-action@v1
