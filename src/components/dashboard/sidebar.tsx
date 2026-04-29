@@ -3,12 +3,14 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { LayoutDashboard, Globe, Settings, Plus } from "lucide-react";
+import { LayoutDashboard, Globe, Settings, Plus, Bell, Shield } from "lucide-react";
 
 const nav = [
-  { href: "/",        label: "Overview",  icon: LayoutDashboard },
-  { href: "/sites",   label: "Sites",     icon: Globe },
-  { href: "/settings",label: "Settings",  icon: Settings },
+  { href: "/",              label: "Overview",      icon: LayoutDashboard },
+  { href: "/sites",         label: "Sites",         icon: Globe },
+  { href: "/subscriptions", label: "Subscriptions", icon: Bell },
+  { href: "/admin",         label: "Admin",         icon: Shield },
+  { href: "/settings",      label: "Settings",      icon: Settings },
 ];
 
 export function Sidebar() {

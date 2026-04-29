@@ -10,6 +10,8 @@ import { Separator } from "@/components/ui/separator";
 import { ChangeCard } from "@/components/dashboard/change-card";
 import { SiteActionButtons } from "@/components/dashboard/site-action-buttons";
 import { AnalyzeButton } from "@/components/dashboard/analyze-button";
+import { MonitoredUrlRow } from "@/components/dashboard/monitored-url-row";
+import { AddUrlForm } from "@/components/dashboard/add-url-form";
 import { formatDistanceToNow } from "@/lib/time";
 import {
   ArrowLeft,
@@ -46,6 +48,18 @@ export default async function SiteDetailPage({ params }: { params: Promise<{ id:
           detectedAt: true,
           emailStatus: true,
           siteId: true,
+        },
+      },
+      monitoredUrls: {
+        orderBy: { createdAt: "asc" },
+        select: {
+          id: true,
+          url: true,
+          paused: true,
+          fetchMode: true,
+          consecutiveFailures: true,
+          lastFailureKind: true,
+          lastCheckedAt: true,
         },
       },
       _count: { select: { snapshots: true, changes: true } },
@@ -174,6 +188,41 @@ export default async function SiteDetailPage({ params }: { params: Promise<{ id:
           </CardContent>
         </Card>
       </details>
+
+      <Separator className="mb-8" />
+
+      {/* ── Monitored URLs (Phase 2b) ── */}
+      <div className="mb-8">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <Globe className="h-4 w-4 text-muted-foreground" />
+            <h2 className="text-sm font-semibold">Monitored URLs</h2>
+            <span className="text-xs text-muted-foreground">
+              · {site.monitoredUrls.length} URL{site.monitoredUrls.length === 1 ? "" : "s"}
+            </span>
+          </div>
+          <AddUrlForm siteId={site.id} />
+        </div>
+
+        {site.monitoredUrls.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-10 border border-dashed rounded-xl text-center">
+            <Globe className="h-7 w-7 text-muted-foreground mb-2" />
+            <p className="text-sm font-medium">No URLs monitored yet</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Add a URL to start polling.
+            </p>
+          </div>
+        ) : (
+          <div
+            className="rounded-md overflow-hidden"
+            style={{ border: "1px solid var(--border, #E8E8F2)" }}
+          >
+            {site.monitoredUrls.map((u) => (
+              <MonitoredUrlRow key={u.id} url={u} />
+            ))}
+          </div>
+        )}
+      </div>
 
       <Separator className="mb-8" />
 
