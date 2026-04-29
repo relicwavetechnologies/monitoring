@@ -8,8 +8,9 @@ import { sha256, gzip } from "@/lib/pipeline/hash";
 import { computeDiff } from "@/lib/pipeline/diff";
 import { computeBlockDiff } from "@/lib/pipeline/diff-blocks";
 import { checkStability } from "@/lib/pipeline/stability";
-import { classifyChange, categoryToEnum } from "@/lib/pipeline/classify";
+import { classifyChange, type ClassifyResult } from "@/lib/pipeline/classify";
 import { maybeNotify } from "@/lib/pipeline/notify";
+import { ChangeCategory } from "@/generated/prisma/enums";
 import { getLogger } from "@/lib/logger";
 import type { RenderMode } from "@/generated/prisma/enums";
 
@@ -20,19 +21,11 @@ export type PollResult =
   | { status: "unchanged"; pagesCrawled: number }
   | { status: "insignificant_diff" }
   | { status: "pending_stability_check" }
-  | { status: "change_detected"; changeId: string; classification: Classification }
+  | { status: "change_detected"; changeId: string; classification: ClassifyResult }
   | { status: "duplicate_change"; changeId: string }
   | { status: "fetch_failed"; error: string }
   | { status: "not_found" }
   | { status: "paused" };
-
-interface Classification {
-  category: string;
-  severity: number;
-  confidence: number;
-  summary: string;
-  detail: string | null;
-}
 
 function isPrismaUniqueViolation(err: unknown): boolean {
   return (
@@ -268,23 +261,32 @@ export async function runPoll(monitoredUrlId: string): Promise<PollResult> {
     const stability = await checkStability(monitoredUrlId, newHash, diffResult.unified);
     if (stability === "pending") return { status: "pending_stability_check" };
 
-    // ── Classify ─────────────────────────────────────────────────────────────
-    let classification: Classification;
+    // ── Classify (rules + grounded LLM with escalation, Phase 3) ────────────
+    let classification: ClassifyResult;
     try {
-      classification = await classifyChange(
-        site.name,
-        url.url,
-        diffResult.addedLines,
-        diffResult.removedLines
-      );
+      classification = await classifyChange({
+        siteName: site.name,
+        siteUrl: url.url,
+        addedLines: diffResult.addedLines,
+        removedLines: diffResult.removedLines,
+        diffText: diffResult.unified,
+      });
     } catch (err) {
-      plog.error({ err }, "classify failed");
+      plog.error({ err }, "classify wrapper threw");
       classification = {
-        category: "UNKNOWN",
+        category: ChangeCategory.UNKNOWN,
         severity: 2,
         confidence: 0,
         summary: "Change detected but classification failed",
         detail: null,
+        evidenceQuotes: [],
+        status: "FALLBACK",
+        rawSeverity: 2,
+        model: "fallback",
+        promptVersion: "v2",
+        tokensIn: 0,
+        tokensOut: 0,
+        costUsd: 0,
       };
     }
 
@@ -302,12 +304,21 @@ export async function runPoll(monitoredUrlId: string): Promise<PollResult> {
           toSnapshotId: newSnapshot.id,
           fromContentHash,
           toContentHash,
-          category: categoryToEnum(classification.category),
+          category: classification.category,
           severity: classification.severity,
           confidence: classification.confidence,
           summary: classification.summary,
           detail: classification.detail,
           diffText: diffResult.unified,
+          // Phase 3 metadata
+          classifierStatus: classification.status,
+          evidenceQuotes: classification.evidenceQuotes,
+          classifierPromptVersion: classification.promptVersion,
+          classifierModel: classification.model,
+          classifierTokensIn: classification.tokensIn,
+          classifierTokensOut: classification.tokensOut,
+          classifierCostUsd: classification.costUsd,
+          classifierRawSeverity: classification.rawSeverity,
         },
       });
     } catch (err) {

@@ -1,0 +1,82 @@
+# Calibration suite for the classifier (Phase 3).
+#
+# Each case is a hand-labelled diff with the expected (category, severity_min,
+# severity_max). The runner (`pnpm calibrate`) feeds each case through the
+# full classify pipeline (rules + LLM + clamps + grounding) and reports a
+# confusion matrix plus precision/recall against these labels.
+#
+# Conventions:
+#   - severity_min and severity_max are inclusive bounds — the classifier
+#     is correct as long as the produced severity falls inside [min, max].
+#   - "expected_categories" is a set of acceptable categories (because rules
+#     plus LLM judgement legitimately have some ambiguity at the edges, e.g.
+#     POLICY vs DOCUMENT_REQUIREMENT for a "you must now provide X" change).
+#   - "must_be_grounded: true" requires at least one verified evidence quote.
+#   - Add new cases as you encounter real-world misclassifications. The
+#     suite is the regression-prevention shield against prompt drift.
+
+cases:
+
+  # ── Critical fee-change case — currency on both sides, big number ─────────
+  - id: usembassy-fee-bump
+    site_name: U.S. Embassy Mumbai
+    site_url: https://in.usembassy.gov/mumbai/
+    added_lines:
+      - "Standard visa application fee: $205, effective May 1, 2026."
+    removed_lines:
+      - "Standard visa application fee: $185."
+    expected_categories: [FEE_CHANGE]
+    severity_min: 4
+    severity_max: 5
+    must_be_grounded: true
+
+  # ── Important appointment closure ─────────────────────────────────────────
+  - id: vfs-appointments-suspended
+    site_name: VFS Global UAE → Singapore
+    site_url: https://visa.vfsglobal.com/are/en/sgp/
+    added_lines:
+      - "Appointment bookings are temporarily suspended due to high demand."
+    removed_lines:
+      - "Book your appointment online via the scheduling portal."
+    expected_categories: [APPOINTMENT, POLICY_CHANGE]
+    severity_min: 4
+    severity_max: 5
+    must_be_grounded: true
+
+  # ── Appointments resuming — equally important ────────────────────────────
+  - id: ica-appointments-resumed
+    site_name: Singapore ICA
+    site_url: https://www.ica.gov.sg/
+    added_lines:
+      - "Appointments are now available for the Long-Term Visit Pass starting June 1, 2026."
+    removed_lines:
+      - "No appointments available for the Long-Term Visit Pass at this time."
+    expected_categories: [APPOINTMENT]
+    severity_min: 4
+    severity_max: 5
+    must_be_grounded: true
+
+  # ── New document requirement — affects applications ──────────────────────
+  - id: gov-uk-new-document
+    site_name: UK Standard Visitor Visa
+    site_url: https://www.gov.uk/standard-visitor/
+    added_lines:
+      - "Applicants must provide a police clearance certificate from each country lived in for over 12 months."
+    removed_lines: []
+    expected_categories: [DOCUMENT_REQUIREMENT, POLICY_CHANGE]
+    severity_min: 3
+    severity_max: 5
+    must_be_grounded: true
+
+  # ── Pure cosmetic — must NOT trip severity ≥ 3 ───────────────────────────
+  - id: cosmetic-button-relabel
+    site_name: VFS Global
+    site_url: https://www.vfsglobal.com/en/individuals/
+    added_lines:
+      - "Apply now"
+    removed_lines:
+      - "Apply Now"
+    expected_categories: [COSMETIC]
+    severity_min: 1
+    severity_max: 2
+    must_be_grounded: false  # cosmetic changes don't always have quotable phrasing

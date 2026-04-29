@@ -11,6 +11,7 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "capture-fixture": "tsx scripts/capture-fixture.ts",
+    "calibrate": "tsx --env-file-if-exists=.env.local tests/calibration/run.ts",
     "db:generate": "npx prisma generate",
     "db:push": "npx prisma db push",
     "db:migrate:dev": "npx prisma migrate dev",
@@ -70,6 +71,7 @@
     "tailwindcss": "^4",
     "tsx": "^4.21.0",
     "typescript": "^5",
-    "vitest": "^4.1.5"
+    "vitest": "^4.1.5",
+    "yaml": "^2.8.3"
   }
 }

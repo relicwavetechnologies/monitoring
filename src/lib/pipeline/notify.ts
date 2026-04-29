@@ -21,6 +21,18 @@ export async function maybeNotify(changeId: string): Promise<void> {
   // Already sent or already given up — nothing to do.
   if (change.emailStatus === "SENT" || change.emailStatus === "SKIPPED") return;
 
+  // Phase 3: refuse to email an ungrounded classification. The change is
+  // still recorded and visible in the dashboard, but we don't send an
+  // alert that we can't back up with quotes from the source.
+  if (change.classifierStatus === "UNGROUNDED") {
+    log.warn({ changeId, siteId: change.siteId }, "skipping email — classification is ungrounded");
+    await db.change.update({
+      where: { id: changeId },
+      data: { emailStatus: "SKIPPED" },
+    });
+    return;
+  }
+
   const action = decideEmailNextState({
     severity: change.severity,
     confidence: change.confidence,

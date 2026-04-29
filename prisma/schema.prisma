@@ -79,6 +79,24 @@ enum EmailStatus {
   SKIPPED
 }
 
+/// Outcome of the LLM classification step. Persisted on each Change so we
+/// can debug "why did/didn't this get an email" after the fact.
+///   VALIDATED  — every evidence quote is a substring of the diff text;
+///                rule floors/ceilings (if any) were honoured.
+///   CLAMPED    — the LLM's severity was outside the rule-allowed range
+///                and got clamped. The original LLM value is in classifierRawSeverity.
+///   UNGROUNDED — at least one evidence quote could not be verified against
+///                the diff. The Change is recorded but `maybeNotify` will
+///                refuse to send an email for an ungrounded classification.
+///   FALLBACK   — the LLM call threw or returned malformed JSON; severity
+///                defaulted to 2 / confidence 0 so the row exists for audit.
+enum ClassifierStatus {
+  VALIDATED
+  CLAMPED
+  UNGROUNDED
+  FALLBACK
+}
+
 model Site {
   id                  String     @id @default(cuid())
   name                String
@@ -224,6 +242,27 @@ model Change {
   emailAttempts      Int            @default(0)
   lastEmailError     String?        @db.Text
   lastEmailAttemptAt DateTime?
+  // Classifier metadata (Phase 3): grounding + cost + provenance.
+  /// Outcome of the grounding/clamp checks. SKIPPED means the row was
+  /// created without an LLM call (rare; only on classifier crash).
+  classifierStatus       ClassifierStatus @default(VALIDATED)
+  /// Verbatim quotes from the diff text that the LLM cited as evidence.
+  /// Each must be a substring of `diffText` or the change is UNGROUNDED.
+  evidenceQuotes         String[]         @default([])
+  /// Prompt template version. Bump when the system prompt changes so we
+  /// can A/B-evaluate against the calibration suite.
+  classifierPromptVersion String          @default("v1")
+  /// Which model produced the final classification — `MODELS.fast` or the
+  /// escalation tier `MODELS.best`. Plain string so swapping providers
+  /// doesn't require a migration.
+  classifierModel        String?
+  classifierTokensIn     Int?
+  classifierTokensOut    Int?
+  /// Estimated cost in USD, computed from tokens × per-model rate.
+  classifierCostUsd      Float?
+  /// What severity the LLM originally returned, before any clamp. Lets us
+  /// see how often rules are overriding the model.
+  classifierRawSeverity  Int?
   detectedAt         DateTime       @default(now())
   monitoredUrl       MonitoredUrl   @relation(fields: [monitoredUrlId], references: [id], onDelete: Cascade)
   site               Site           @relation(fields: [siteId], references: [id], onDelete: Cascade)

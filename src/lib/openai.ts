@@ -21,9 +21,33 @@ export const openai = new Proxy({} as OpenAI, {
   },
 });
 
-// Model aliases — map to your gateway's available models
+// Model aliases — overridable via env so the gateway can swap providers
+// without a deploy. Defaults match what the gateway exposes today.
 export const MODELS = {
-  fast: "gemini-3-flash-lite-preview",  // classification — fast + cheap
-  best: "gemini-3-flash-lite-preview",  // low-confidence retry (same tier, escalate if needed)
-  gemini: "gemini-3-flash-preview",     // site analysis — large context, smarter
+  fast: process.env.OPENAI_MODEL_FAST ?? "gemini-3-flash-lite-preview",
+  best: process.env.OPENAI_MODEL_BEST ?? "gemini-3-flash-preview",
+  gemini: process.env.OPENAI_MODEL_GEMINI ?? "gemini-3-flash-preview",
 } as const;
+
+/**
+ * Per-million-token pricing in USD. The map is checked by exact model name
+ * first, then by prefix, then defaults to a conservative estimate. Values
+ * are rough; the goal is approximate cost accounting, not invoicing.
+ */
+const COST_PER_MILLION: Array<{ match: string | RegExp; input: number; output: number }> = [
+  { match: "gemini-3-flash-lite-preview",    input: 0.075, output: 0.30 },
+  { match: "gemini-3-flash-preview",         input: 0.30,  output: 1.20 },
+  { match: /^gpt-5/i,                        input: 2.50,  output: 10.00 },
+  { match: /^claude-opus/i,                  input: 15.00, output: 75.00 },
+  { match: /^claude-sonnet/i,                input: 3.00,  output: 15.00 },
+];
+
+const FALLBACK_COST = { input: 0.50, output: 2.00 };
+
+export function modelCostUsd(model: string, tokensIn: number, tokensOut: number): number {
+  const entry = COST_PER_MILLION.find((e) =>
+    typeof e.match === "string" ? e.match === model : e.match.test(model)
+  );
+  const rate = entry ?? FALLBACK_COST;
+  return (tokensIn * rate.input + tokensOut * rate.output) / 1_000_000;
+}
