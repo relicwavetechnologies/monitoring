@@ -62,6 +62,38 @@ enum RenderMode {
   JS
 }
 
+/// Fetch tier (Phase 4). Each tier is more capable but more expensive than
+/// the last; auto-escalation moves a URL up a tier after repeated blocked
+/// fetches. The tiers are:
+///   STATIC      — undici, plain HTTP. Fast and free. Works for plain HTML
+///                 sites with no anti-bot.
+///   PLAYWRIGHT  — vanilla headless Chromium via playwright-core. Handles
+///                 JS-rendered content. Detectable by 2026 Cloudflare.
+///   STEALTH     — patchright (Chromium binary patches). Defeats most
+///                 fingerprint-level detection. Heavier on CPU.
+///   EXTERNAL    — third-party scraper API (Browserless, Scrapfly, ZenRows).
+///                 Optional; configured via SCRAPER_API_URL / SCRAPER_API_KEY.
+enum FetchMode {
+  STATIC
+  PLAYWRIGHT
+  STEALTH
+  EXTERNAL
+}
+
+/// Why a fetch failed (Phase 4). Drives the auto-escalation logic.
+///   NETWORK  — connection refused, DNS failure, TLS handshake error.
+///   BLOCKED  — Cloudflare challenge, 403, 429, 503, "verifying you are human".
+///   TIMEOUT  — fetch exceeded its per-page timeout.
+///   PARSE    — response was not HTML, or was empty.
+///   OTHER    — anything that doesn't fit the above.
+enum FailureKind {
+  NETWORK
+  BLOCKED
+  TIMEOUT
+  PARSE
+  OTHER
+}
+
 enum ChangeCategory {
   POLICY_CHANGE
   FEE_CHANGE
@@ -148,7 +180,30 @@ model MonitoredUrl {
   // when a MonitoredUrl is created and can be overridden afterwards.
   contentSelector String     @default("body")
   stripPatterns   String[]   @default([])
+  /// Legacy field — kept for UI / bootstrap compat. The pipeline now reads
+  /// `fetchMode` (Phase 4); renderMode = STATIC backfills to fetchMode =
+  /// STATIC, renderMode = JS to fetchMode = PLAYWRIGHT.
   renderMode      RenderMode @default(STATIC)
+  /// Phase 4: which fetch tier to use for this URL. Auto-escalates after
+  /// `escalateAfterFailures` consecutive BLOCKED responses unless
+  /// `autoEscalate` is false.
+  fetchMode       FetchMode  @default(STATIC)
+  /// Counter of consecutive failed fetches. Reset to 0 on the first
+  /// successful fetch after a failure streak.
+  consecutiveFailures   Int           @default(0)
+  /// When the most recent failure occurred. Useful for the dashboard's
+  /// "this URL is currently down" badge.
+  lastFailureAt         DateTime?
+  /// Why the most recent failure happened. NULL when there has been no
+  /// failure yet (or after a successful fetch reset the streak).
+  lastFailureKind       FailureKind?
+  /// If false, the auto-escalation logic will not bump this URL's
+  /// fetchMode regardless of how many BLOCKED responses pile up.
+  autoEscalate          Boolean       @default(true)
+  /// Number of consecutive BLOCKED failures required before auto-escalation
+  /// kicks in. Tuned per-URL — chatty sites can be set higher to avoid
+  /// premature escalation.
+  escalateAfterFailures Int           @default(3)
   /// `true` skips this URL on the next cron tick without removing the row.
   paused          Boolean    @default(false)
   lastCheckedAt   DateTime?
@@ -162,6 +217,7 @@ model MonitoredUrl {
 
   @@unique([siteId, url], map: "MonitoredUrl_siteId_url_key")
   @@index([siteId, paused, lastCheckedAt])
+  @@index([fetchMode, consecutiveFailures])
 }
 
 model Snapshot {

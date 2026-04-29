@@ -1,7 +1,8 @@
 import { gunzipSync } from "zlib";
 import { db } from "@/lib/db";
 import { crawlSite } from "@/lib/pipeline/crawl";
-import { fetchSite } from "@/lib/pipeline/fetch";
+import { dispatchFetch } from "@/lib/pipeline/fetchers";
+import { decideNextTier } from "@/lib/pipeline/fetchers/tier-escalation";
 import { extractContent } from "@/lib/pipeline/extract";
 import { extractBlocks, computeBlocksHash, type Block } from "@/lib/pipeline/extract-blocks";
 import { sha256, gzip } from "@/lib/pipeline/hash";
@@ -12,7 +13,6 @@ import { classifyChange, type ClassifyResult } from "@/lib/pipeline/classify";
 import { maybeNotify } from "@/lib/pipeline/notify";
 import { ChangeCategory } from "@/generated/prisma/enums";
 import { getLogger } from "@/lib/logger";
-import type { RenderMode } from "@/generated/prisma/enums";
 
 const log = getLogger("pipeline.run-poll");
 
@@ -125,27 +125,89 @@ export async function runPoll(monitoredUrlId: string): Promise<PollResult> {
     }
 
     if (crawlResult.pages.length === 0) {
-      plog.warn({ url: url.url }, "crawl returned 0 pages — falling back to single-page fetch");
-      let fetchResult;
-      try {
-        fetchResult = await fetchSite(url.url, url.renderMode as RenderMode);
-      } catch (err) {
-        plog.error({ err, url: url.url }, "single-page fallback also failed");
-        return { status: "fetch_failed", error: String(err) };
+      plog.warn(
+        { url: url.url, fetchMode: url.fetchMode },
+        "crawl returned 0 pages — falling back to single-page tiered fetch"
+      );
+
+      // ── Tiered fetch via the Phase 4 dispatcher ────────────────────────────
+      const dispatch = await dispatchFetch({ url: url.url, mode: url.fetchMode });
+
+      if (dispatch.outcome.kind !== "OK") {
+        // Run the auto-escalation decision and persist the new tier state.
+        const decision = decideNextTier({
+          currentMode: url.fetchMode,
+          consecutiveFailures: url.consecutiveFailures,
+          outcomeKind: dispatch.outcome.kind,
+          autoEscalate: url.autoEscalate,
+          escalateAfter: url.escalateAfterFailures,
+        });
+        await db.monitoredUrl.update({
+          where: { id: monitoredUrlId },
+          data: {
+            fetchMode: decision.newMode,
+            consecutiveFailures: decision.newConsecutiveFailures,
+            lastFailureAt: decision.recordFailureNow ? new Date() : url.lastFailureAt,
+            lastFailureKind: decision.newFailureKind,
+          },
+        });
+        if (decision.escalated) {
+          plog.warn(
+            {
+              url: url.url,
+              from: url.fetchMode,
+              to: decision.newMode,
+              reason: dispatch.outcome.reason,
+            },
+            "fetch tier escalated"
+          );
+        }
+        return {
+          status: "fetch_failed",
+          error: `${dispatch.outcome.kind}${dispatch.outcome.reason ? `:${dispatch.outcome.reason}` : ""}`,
+        };
       }
-      pushPageBlocks(fetchResult.html, null);
-      cleanText = extractContent(fetchResult.html, url.contentSelector, url.stripPatterns);
+
+      // Successful fetch → reset the failure streak.
+      if (url.consecutiveFailures !== 0 || url.lastFailureKind !== null) {
+        await db.monitoredUrl.update({
+          where: { id: monitoredUrlId },
+          data: { consecutiveFailures: 0, lastFailureKind: null },
+        });
+      }
+
+      pushPageBlocks(dispatch.html, null);
+      cleanText = extractContent(dispatch.html, url.contentSelector, url.stripPatterns);
       pagesCrawled = 1;
-      httpStatus = fetchResult.status;
+      httpStatus = dispatch.status;
       manifest = JSON.stringify({
         crawledAt: new Date().toISOString(),
         pagesCrawled: 1,
         pagesDiscovered: 1,
         fallback: true,
         reason: "crawl_blocked",
-        pages: [{ url: url.url, path: new URL(url.url).pathname, depth: 0, status: httpStatus, chars: cleanText.length }],
+        fetchMode: url.fetchMode,
+        durationMs: dispatch.durationMs,
+        pages: [
+          {
+            url: url.url,
+            path: new URL(url.url).pathname,
+            depth: 0,
+            status: httpStatus,
+            chars: cleanText.length,
+          },
+        ],
       });
     } else {
+      // Crawl succeeded → reset the failure streak too. The crawl path uses
+      // STATIC undici under the hood; if it returned >0 pages, the URL is
+      // healthy at the static tier even if it had been escalating.
+      if (url.consecutiveFailures !== 0 || url.lastFailureKind !== null) {
+        await db.monitoredUrl.update({
+          where: { id: monitoredUrlId },
+          data: { consecutiveFailures: 0, lastFailureKind: null },
+        });
+      }
       const sortedPages = crawlResult.pages.slice().sort((a, b) => a.url.localeCompare(b.url));
       const rootPage = crawlResult.pages.find((p) => p.depth === 0) ?? crawlResult.pages[0];
       for (const p of sortedPages) {
