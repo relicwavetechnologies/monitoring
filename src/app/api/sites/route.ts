@@ -42,6 +42,24 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 });
   }
 
-  const site = await db.site.create({ data: parsed.data });
+  // Phase 2b: every Site gets one initial MonitoredUrl auto-created from its
+  // root URL. Per-URL config (selector, strip, render mode) is copied from
+  // the Site's defaults so the existing Site config form stays useful.
+  const site = await db.site.create({
+    data: {
+      ...parsed.data,
+      monitoredUrls: {
+        create: [
+          {
+            url: parsed.data.url,
+            contentSelector: parsed.data.contentSelector,
+            stripPatterns: parsed.data.stripPatterns,
+            renderMode: parsed.data.renderMode,
+          },
+        ],
+      },
+    },
+    include: { monitoredUrls: true },
+  });
   return NextResponse.json(site, { status: 201 });
 }

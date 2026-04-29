@@ -23,7 +23,8 @@ export type PollResult =
   | { status: "change_detected"; changeId: string; classification: Classification }
   | { status: "duplicate_change"; changeId: string }
   | { status: "fetch_failed"; error: string }
-  | { status: "not_found" };
+  | { status: "not_found" }
+  | { status: "paused" };
 
 interface Classification {
   category: string;
@@ -60,26 +61,46 @@ function aggregatePages(
     .join("\n\n");
 }
 
-export async function runPoll(siteId: string): Promise<PollResult> {
-  const plog = log.child({ siteId });
+/**
+ * Poll a single MonitoredUrl. The pipeline reads:
+ *   - URL / selector / strip patterns / render mode → MonitoredUrl
+ *   - Severity & confidence thresholds, confirm window, crawl scope → Site
+ * On success, MonitoredUrl.lastCheckedAt and Site.lastCheckedAt are bumped.
+ */
+export async function runPoll(monitoredUrlId: string): Promise<PollResult> {
+  const plog = log.child({ monitoredUrlId });
   try {
-    const site = await db.site.findUnique({ where: { id: siteId } });
-    if (!site || !site.isActive) return { status: "not_found" };
+    const url = await db.monitoredUrl.findUnique({
+      where: { id: monitoredUrlId },
+      include: { site: true },
+    });
+    if (!url || !url.site) return { status: "not_found" };
+    if (!url.site.isActive || url.paused) return { status: "paused" };
 
-    await db.site.update({ where: { id: siteId }, data: { lastCheckedAt: new Date() } });
+    const site = url.site;
+    const siteId = site.id;
+
+    const checkedAt = new Date();
+    await Promise.all([
+      db.monitoredUrl.update({ where: { id: monitoredUrlId }, data: { lastCheckedAt: checkedAt } }),
+      // Site.lastCheckedAt is a denorm of MAX(monitoredUrls.lastCheckedAt). We
+      // bump it monotonically so dashboard freshness stays correct without a
+      // join. Worst case: it slightly leads behind a paused URL — fine.
+      db.site.update({ where: { id: siteId }, data: { lastCheckedAt: checkedAt } }),
+    ]);
 
     // ── Deep tree crawl ──────────────────────────────────────────────────────
     let crawlResult;
     try {
-      crawlResult = await crawlSite(site.url, {
-        contentSelector: site.contentSelector,
-        stripPatterns: site.stripPatterns,
+      crawlResult = await crawlSite(url.url, {
+        contentSelector: url.contentSelector,
+        stripPatterns: url.stripPatterns,
         maxDepth: site.maxCrawlDepth,
         maxPages: site.maxCrawlPages,
         pageTimeoutMs: 10_000,
       });
     } catch (err) {
-      plog.error({ err, url: site.url }, "crawl failed");
+      plog.error({ err, url: url.url }, "crawl failed");
       return { status: "fetch_failed", error: String(err) };
     }
 
@@ -90,19 +111,12 @@ export async function runPoll(siteId: string): Promise<PollResult> {
     let manifest: string;
 
     // ── Block-level extraction (Phase 2a) ────────────────────────────────────
-    // Each crawled page contributes its own block list; we concatenate the
-    // lists with synthetic page-marker blocks so the diff engine can tell
-    // *which page* a block came from. Blocks across pages share the global
-    // hash space, so reordering pages and reordering blocks within a page
-    // are both no-ops.
     const allBlocks: Block[] = [];
     let strategy: "SELECTOR" | "READABILITY" | "BODY" = "SELECTOR";
-    const extractOpts = { selector: site.contentSelector, stripPatterns: site.stripPatterns };
+    const extractOpts = { selector: url.contentSelector, stripPatterns: url.stripPatterns };
 
     function pushPageBlocks(html: string, pageMarker: string | null) {
       if (pageMarker) {
-        // Synthetic h2 block uniquely identifies the page; never matches
-        // anything from another page so a swapped-out page is detectable.
         allBlocks.push({
           idx: allBlocks.length,
           blockHash: sha256(`page:${pageMarker}`),
@@ -118,16 +132,16 @@ export async function runPoll(siteId: string): Promise<PollResult> {
     }
 
     if (crawlResult.pages.length === 0) {
-      plog.warn({ url: site.url }, "crawl returned 0 pages — falling back to single-page fetch");
+      plog.warn({ url: url.url }, "crawl returned 0 pages — falling back to single-page fetch");
       let fetchResult;
       try {
-        fetchResult = await fetchSite(site.url, site.renderMode as RenderMode);
+        fetchResult = await fetchSite(url.url, url.renderMode as RenderMode);
       } catch (err) {
-        plog.error({ err, url: site.url }, "single-page fallback also failed");
+        plog.error({ err, url: url.url }, "single-page fallback also failed");
         return { status: "fetch_failed", error: String(err) };
       }
       pushPageBlocks(fetchResult.html, null);
-      cleanText = extractContent(fetchResult.html, site.contentSelector, site.stripPatterns);
+      cleanText = extractContent(fetchResult.html, url.contentSelector, url.stripPatterns);
       pagesCrawled = 1;
       httpStatus = fetchResult.status;
       manifest = JSON.stringify({
@@ -136,11 +150,9 @@ export async function runPoll(siteId: string): Promise<PollResult> {
         pagesDiscovered: 1,
         fallback: true,
         reason: "crawl_blocked",
-        pages: [{ url: site.url, path: new URL(site.url).pathname, depth: 0, status: httpStatus, chars: cleanText.length }],
+        pages: [{ url: url.url, path: new URL(url.url).pathname, depth: 0, status: httpStatus, chars: cleanText.length }],
       });
     } else {
-      // Pages are processed in URL-sorted order so a stable page order is
-      // produced regardless of crawl-time discovery order.
       const sortedPages = crawlResult.pages.slice().sort((a, b) => a.url.localeCompare(b.url));
       const rootPage = crawlResult.pages.find((p) => p.depth === 0) ?? crawlResult.pages[0];
       for (const p of sortedPages) {
@@ -168,10 +180,8 @@ export async function runPoll(siteId: string): Promise<PollResult> {
     const newBlocksHash = computeBlocksHash(allBlocks);
 
     // ── Dedup short-circuit ──────────────────────────────────────────────────
-    // Prefer the new block-level hash if both the previous snapshot and the
-    // current poll have one; fall back to the legacy text hash for older rows.
     const prevSnapshot = await db.snapshot.findFirst({
-      where: { siteId },
+      where: { monitoredUrlId },
       orderBy: { fetchedAt: "desc" },
     });
 
@@ -193,6 +203,7 @@ export async function runPoll(siteId: string): Promise<PollResult> {
     const newSnapshot = await db.snapshot.create({
       data: {
         siteId,
+        monitoredUrlId,
         contentHash: newHash,
         blocksHash: newBlocksHash,
         extractStrategy: strategy,
@@ -215,8 +226,6 @@ export async function runPoll(siteId: string): Promise<PollResult> {
     }
 
     // ── Diff ─────────────────────────────────────────────────────────────────
-    // Prefer block-level diff when both sides have stored blocks. Falls back
-    // to the legacy text diff when the previous snapshot pre-dates Phase 2a.
     let diffResult: { unified: string; isSignificant: boolean; addedLines: string[]; removedLines: string[] };
     if (prevSnapshot.blocksHash) {
       const prevBlocks = await db.snapshotBlock.findMany({
@@ -255,8 +264,8 @@ export async function runPoll(siteId: string): Promise<PollResult> {
 
     if (!diffResult.isSignificant) return { status: "insignificant_diff" };
 
-    // ── Stability check ──────────────────────────────────────────────────────
-    const stability = await checkStability(siteId, newHash, diffResult.unified);
+    // ── Stability check (per-URL) ────────────────────────────────────────────
+    const stability = await checkStability(monitoredUrlId, newHash, diffResult.unified);
     if (stability === "pending") return { status: "pending_stability_check" };
 
     // ── Classify ─────────────────────────────────────────────────────────────
@@ -264,7 +273,7 @@ export async function runPoll(siteId: string): Promise<PollResult> {
     try {
       classification = await classifyChange(
         site.name,
-        site.url,
+        url.url,
         diffResult.addedLines,
         diffResult.removedLines
       );
@@ -279,7 +288,7 @@ export async function runPoll(siteId: string): Promise<PollResult> {
       };
     }
 
-    // ── Persist change & notify (idempotent on (siteId, fromHash, toHash)) ──
+    // ── Persist change & notify (idempotent on (monitoredUrlId, fromHash, toHash)) ──
     const fromContentHash = prevSnapshot.contentHash;
     const toContentHash = newHash;
 
@@ -288,6 +297,7 @@ export async function runPoll(siteId: string): Promise<PollResult> {
       change = await db.change.create({
         data: {
           siteId,
+          monitoredUrlId,
           fromSnapshotId: prevSnapshot.id,
           toSnapshotId: newSnapshot.id,
           fromContentHash,
@@ -302,10 +312,8 @@ export async function runPoll(siteId: string): Promise<PollResult> {
       });
     } catch (err) {
       if (isPrismaUniqueViolation(err)) {
-        // Same hash transition is already recorded — common when a site flaps
-        // between two states. Surface the existing change rather than failing.
         const existing = await db.change.findFirst({
-          where: { siteId, fromContentHash, toContentHash },
+          where: { monitoredUrlId, fromContentHash, toContentHash },
           select: { id: true },
         });
         plog.info({ fromContentHash, toContentHash, changeId: existing?.id }, "duplicate change suppressed");
@@ -323,4 +331,21 @@ export async function runPoll(siteId: string): Promise<PollResult> {
     plog.error({ err }, "unexpected error in runPoll");
     return { status: "fetch_failed", error: String(err) };
   }
+}
+
+/**
+ * Convenience wrapper: poll every active MonitoredUrl on the given Site.
+ * Used by the legacy "poll this site" admin endpoint and the cron tick.
+ * Sequential by default — per-host concurrency control comes in Phase 4.
+ */
+export async function runPollForSite(siteId: string): Promise<PollResult[]> {
+  const urls = await db.monitoredUrl.findMany({
+    where: { siteId, paused: false, site: { isActive: true } },
+    select: { id: true },
+  });
+  const results: PollResult[] = [];
+  for (const u of urls) {
+    results.push(await runPoll(u.id));
+  }
+  return results;
 }

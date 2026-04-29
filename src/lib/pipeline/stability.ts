@@ -18,46 +18,55 @@ function asJson(p: PendingDiff): Prisma.InputJsonValue {
 /**
  * Thin DB wrapper around `nextStabilityState`.
  *
- * Reads `Site.pendingDiff` + `Site.confirmAfterHours`, runs the pure decision,
- * and writes the new pending state back. Returns the high-level outcome the
- * caller cares about.
+ * Phase 2b: state lives on the MonitoredUrl, not on the Site, so two URLs on
+ * the same site each carry their own pending-window. The confirm-window
+ * value still comes from the parent Site.
  */
 export async function checkStability(
-  siteId: string,
+  monitoredUrlId: string,
   newHash: string,
   diffText: string
 ): Promise<"confirmed" | "pending" | "reverted"> {
-  const site = await db.site.findUnique({
-    where: { id: siteId },
-    select: { pendingDiff: true, confirmAfterHours: true },
+  const url = await db.monitoredUrl.findUnique({
+    where: { id: monitoredUrlId },
+    select: { pendingDiff: true, site: { select: { confirmAfterHours: true } } },
   });
 
   const verdict: StabilityVerdict = nextStabilityState({
-    pendingDiff: (site?.pendingDiff as PendingDiff | null) ?? null,
+    pendingDiff: (url?.pendingDiff as PendingDiff | null) ?? null,
     newHash,
     newDiffText: diffText,
     now: new Date(),
-    confirmAfterHours: site?.confirmAfterHours ?? 24,
+    confirmAfterHours: url?.site?.confirmAfterHours ?? 24,
   });
 
   switch (verdict.decision) {
     case "pending_first_sight":
     case "pending_reset":
-      await db.site.update({ where: { id: siteId }, data: { pendingDiff: asJson(verdict.pending) } });
-      log.info({ siteId, hash: newHash, decision: verdict.decision }, "stability pending");
+      await db.monitoredUrl.update({
+        where: { id: monitoredUrlId },
+        data: { pendingDiff: asJson(verdict.pending) },
+      });
+      log.info({ monitoredUrlId, hash: newHash, decision: verdict.decision }, "stability pending");
       return "pending";
 
     case "pending_within_window":
-      await db.site.update({ where: { id: siteId }, data: { pendingDiff: asJson(verdict.pending) } });
+      await db.monitoredUrl.update({
+        where: { id: monitoredUrlId },
+        data: { pendingDiff: asJson(verdict.pending) },
+      });
       log.info(
-        { siteId, hash: newHash, etaHours: verdict.etaHours },
+        { monitoredUrlId, hash: newHash, etaHours: verdict.etaHours },
         "stability still inside confirm window"
       );
       return "pending";
 
     case "confirmed":
-      await db.site.update({ where: { id: siteId }, data: { pendingDiff: undefined } });
-      log.info({ siteId, hash: newHash }, "stability confirmed");
+      await db.monitoredUrl.update({
+        where: { id: monitoredUrlId },
+        data: { pendingDiff: undefined },
+      });
+      log.info({ monitoredUrlId, hash: newHash }, "stability confirmed");
       return "confirmed";
   }
 }

@@ -76,7 +76,21 @@ async function main() {
       continue;
     }
 
-    await db.site.create({ data: site });
+    await db.site.create({
+      data: {
+        ...site,
+        monitoredUrls: {
+          create: [
+            {
+              url: site.url,
+              contentSelector: site.contentSelector,
+              stripPatterns: site.stripPatterns ?? [],
+              renderMode: site.renderMode,
+            },
+          ],
+        },
+      },
+    });
     console.log(`  ✓ ${site.name}`);
   }
 

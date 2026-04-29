@@ -1,51 +1,66 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { getLogger } from "@/lib/logger";
+import { isMonitoredUrlDue } from "@/lib/pipeline/tick-logic";
+
+const log = getLogger("api.cron.tick");
 
 function verifyCron(req: NextRequest) {
   const auth = req.headers.get("authorization");
   return auth === `Bearer ${process.env.CRON_SECRET}`;
 }
 
+/**
+ * Phase 2b: tick now iterates MonitoredUrls, not Sites. The cadence still
+ * comes from `Site.pollIntervalMin` (URLs on the same site share a cadence;
+ * per-URL cadence override can come in a later phase). A URL is "due" if
+ * its own `lastCheckedAt` is older than that interval.
+ */
 export async function GET(req: NextRequest) {
   if (!verifyCron(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const now = new Date();
+  const safetyCutoff = new Date(now.getTime() - 1 * 60 * 1000);
 
-  // Find all active sites due for a check
-  const sites = await db.site.findMany({
+  const candidates = await db.monitoredUrl.findMany({
     where: {
-      isActive: true,
-      OR: [
-        { lastCheckedAt: null },
-        {
-          lastCheckedAt: {
-            lte: new Date(now.getTime() - 1 * 60 * 1000), // safety: at least 1 min ago
-          },
-        },
-      ],
+      paused: false,
+      site: { isActive: true },
+      OR: [{ lastCheckedAt: null }, { lastCheckedAt: { lte: safetyCutoff } }],
     },
-    select: { id: true, lastCheckedAt: true, pollIntervalMin: true },
+    select: {
+      id: true,
+      lastCheckedAt: true,
+      site: { select: { id: true, pollIntervalMin: true } },
+    },
   });
 
-  const due = sites.filter((s) => {
-    if (!s.lastCheckedAt) return true;
-    const nextPoll = new Date(s.lastCheckedAt.getTime() + s.pollIntervalMin * 60 * 1000);
-    return now >= nextPoll;
-  });
+  const due = candidates.filter((u) =>
+    isMonitoredUrlDue({
+      now,
+      lastCheckedAt: u.lastCheckedAt,
+      pollIntervalMin: u.site.pollIntervalMin,
+    })
+  );
 
-  // Fan out — fire-and-forget each poll
   const baseUrl = req.nextUrl.origin;
-
-  await Promise.allSettled(
-    due.map((site) =>
-      fetch(`${baseUrl}/api/cron/poll/${site.id}`, {
+  const settled = await Promise.allSettled(
+    due.map((u) =>
+      fetch(`${baseUrl}/api/cron/poll/${u.id}`, {
         method: "GET",
         headers: { authorization: `Bearer ${process.env.CRON_SECRET}` },
       })
     )
   );
 
-  return NextResponse.json({ triggered: due.length, siteIds: due.map((s) => s.id) });
+  const failures = settled.filter((s) => s.status === "rejected").length;
+  log.info({ triggered: due.length, failures }, "tick fan-out complete");
+
+  return NextResponse.json({
+    triggered: due.length,
+    failures,
+    monitoredUrlIds: due.map((u) => u.id),
+  });
 }

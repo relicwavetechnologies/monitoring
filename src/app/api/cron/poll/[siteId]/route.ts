@@ -6,16 +6,21 @@ function verifyCron(req: NextRequest) {
   return auth === `Bearer ${process.env.CRON_SECRET}`;
 }
 
+/**
+ * Phase 2b: the path param is now a MonitoredUrl id, not a Site id. The
+ * folder name `[siteId]` is preserved to keep the URL stable for the
+ * crontab wrapper, but the value is treated as a MonitoredUrl id.
+ */
 export async function GET(req: NextRequest, { params }: { params: Promise<{ siteId: string }> }) {
   if (!verifyCron(req))
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { siteId } = await params;
+  const { siteId: monitoredUrlId } = await params;
 
-  const result = await runPoll(siteId);
+  const result = await runPoll(monitoredUrlId);
 
   if (result.status === "not_found")
-    return NextResponse.json({ error: "Site not found or inactive" }, { status: 404 });
+    return NextResponse.json({ error: "MonitoredUrl not found" }, { status: 404 });
 
   if (result.status === "fetch_failed")
     return NextResponse.json({ error: result.error }, { status: 500 });

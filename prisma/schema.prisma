@@ -83,19 +83,28 @@ model Site {
   id                  String     @id @default(cuid())
   name                String
   url                 String
+  // Phase 2b: site-level fields below remain on Site for backwards compat
+  // and as defaults when creating a new MonitoredUrl. The pipeline now
+  // reads the per-URL config from MonitoredUrl, not from these fields.
   renderMode          RenderMode @default(STATIC)
   contentSelector     String     @default("body")
   stripPatterns       String[]   @default([])
   pollIntervalMin     Int        @default(60)
   isActive            Boolean    @default(true)
-  // Per-site tunables (Phase 1)
+  // Per-site policy tunables (Phase 1) — these stay on Site and are
+  // inherited by every MonitoredUrl underneath it.
   minDiffChars        Int        @default(40)
   severityThreshold   Int        @default(3)
   confidenceThreshold Float      @default(0.7)
   confirmAfterHours   Int        @default(24)
   maxCrawlDepth       Int        @default(2)
   maxCrawlPages       Int        @default(20)
+  // Mirror of MAX(monitoredUrls.lastCheckedAt) so the dashboard freshness
+  // query stays a single index lookup. Updated by the pipeline.
   lastCheckedAt       DateTime?
+  // Phase 2b: pendingDiff has moved to MonitoredUrl.pendingDiff. This field
+  // is left in place to avoid breaking any legacy reads but is no longer
+  // written by the pipeline. To be dropped in a later phase.
   pendingDiff         Json?
   aiAnalysis          String?    @db.Text
   aiAnalysisAt        DateTime?
@@ -103,10 +112,47 @@ model Site {
   updatedAt           DateTime   @updatedAt
   snapshots           Snapshot[]
   changes             Change[]
+  monitoredUrls       MonitoredUrl[]
+}
+
+/// One concrete URL on a Site that the pipeline polls. A Site is the logical
+/// container ("US Embassy Mumbai"); a MonitoredUrl is a specific page on
+/// that site we're actually watching ("/mumbai/", "/mumbai/visas/", …).
+///
+/// Per-URL fields (selector, strip patterns, render mode, paused, pendingDiff)
+/// live here because they vary page-by-page. Per-site policy (severity
+/// thresholds, confirm window, etc.) stays on the parent Site.
+model MonitoredUrl {
+  id              String     @id @default(cuid())
+  siteId          String
+  url             String
+  // Per-URL extraction config. Defaults are copied from the parent Site
+  // when a MonitoredUrl is created and can be overridden afterwards.
+  contentSelector String     @default("body")
+  stripPatterns   String[]   @default([])
+  renderMode      RenderMode @default(STATIC)
+  /// `true` skips this URL on the next cron tick without removing the row.
+  paused          Boolean    @default(false)
+  lastCheckedAt   DateTime?
+  /// Per-URL stability state (Phase 2b moves it from Site.pendingDiff).
+  pendingDiff     Json?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  site            Site       @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  snapshots       Snapshot[]
+  changes         Change[]
+
+  @@unique([siteId, url], map: "MonitoredUrl_siteId_url_key")
+  @@index([siteId, paused, lastCheckedAt])
 }
 
 model Snapshot {
   id          String   @id @default(cuid())
+  /// Phase 2b: every snapshot now belongs to a specific URL. Backfilled
+  /// from Site at migration time; new rows always have it set.
+  monitoredUrlId String
+  /// Denorm pointer to the MonitoredUrl's parent Site. Kept for fast
+  /// "all snapshots for this site" lookups without a join.
   siteId      String
   contentHash String
   // Phase 2a: reorder-resilient hash over the *set* of block hashes.
@@ -121,11 +167,14 @@ model Snapshot {
   textGz      Bytes
   fetchedAt   DateTime @default(now())
   httpStatus  Int      @default(200)
+  monitoredUrl MonitoredUrl @relation(fields: [monitoredUrlId], references: [id], onDelete: Cascade)
   site        Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
   blocks      SnapshotBlock[]
 
   @@index([siteId, fetchedAt(sort: Desc)])
   @@index([siteId, blocksHash])
+  @@index([monitoredUrlId, fetchedAt(sort: Desc)])
+  @@index([monitoredUrlId, blocksHash])
 }
 
 /// One block of extracted content from a snapshot — typically a paragraph,
@@ -152,6 +201,11 @@ model SnapshotBlock {
 
 model Change {
   id                 String         @id @default(cuid())
+  /// Phase 2b: every change now belongs to a specific URL. Backfilled
+  /// from Site at migration time; new rows always have it set.
+  monitoredUrlId     String
+  /// Denorm pointer to the MonitoredUrl's parent Site. Kept for fast
+  /// "all changes for this site" lookups without a join.
   siteId             String
   fromSnapshotId     String?
   toSnapshotId       String
@@ -171,15 +225,20 @@ model Change {
   lastEmailError     String?        @db.Text
   lastEmailAttemptAt DateTime?
   detectedAt         DateTime       @default(now())
+  monitoredUrl       MonitoredUrl   @relation(fields: [monitoredUrlId], references: [id], onDelete: Cascade)
   site               Site           @relation(fields: [siteId], references: [id], onDelete: Cascade)
 
   // NB: the actual DB index also uses NULLS NOT DISTINCT (see migration 0001).
   // Prisma 7's prisma-client generator does not yet expose nullsNotDistinct,
   // so the schema declares the columns and the migration owns the SQL nuance.
-  @@unique([siteId, fromContentHash, toContentHash], map: "Change_siteId_fromContentHash_toContentHash_key")
+  // Phase 2b: idempotency now scoped per-URL, not per-Site, so two URLs on
+  // the same Site can independently produce a change with the same hash
+  // transition (e.g. two pages both showing the same fee number).
+  @@unique([monitoredUrlId, fromContentHash, toContentHash], map: "Change_monitoredUrlId_fromContentHash_toContentHash_key")
   @@index([siteId, detectedAt(sort: Desc)])
   @@index([severity, detectedAt(sort: Desc)])
   @@index([emailStatus, lastEmailAttemptAt])
+  @@index([monitoredUrlId, detectedAt(sort: Desc)])
 }
 
 model SerperHit {

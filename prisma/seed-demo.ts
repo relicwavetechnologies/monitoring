@@ -252,7 +252,21 @@ async function main() {
       });
       console.log(`  ↺  ${s.name}`);
     } else {
-      site = await db.site.create({ data: s });
+      site = await db.site.create({
+        data: {
+          ...s,
+          monitoredUrls: {
+            create: [
+              {
+                url: s.url,
+                contentSelector: s.contentSelector,
+                stripPatterns: s.stripPatterns ?? [],
+                renderMode: s.renderMode,
+              },
+            ],
+          },
+        },
+      });
       console.log(`  ✓  ${s.name}`);
     }
     siteIds.push(site.id);
@@ -261,6 +275,12 @@ async function main() {
   // 2. Create snapshot pairs and changes
   for (const c of CHANGES) {
     const siteId = siteIds[c.siteIdx];
+    // Resolve the auto-created MonitoredUrl for this Site (one per site at
+    // seed time). Phase 2b: snapshots and changes hang off MonitoredUrl.
+    const monitoredUrl = await db.monitoredUrl.findFirst({ where: { siteId } });
+    if (!monitoredUrl) throw new Error(`no MonitoredUrl seeded for siteId=${siteId}`);
+    const monitoredUrlId = monitoredUrl.id;
+
     const detectedAt = daysAgo(c.daysAgoN);
     const beforeText = `[snapshot before — ${randomBytes(4).toString("hex")}]`;
     const afterText  = `[snapshot after  — ${randomBytes(4).toString("hex")}]`;
@@ -268,6 +288,7 @@ async function main() {
     const snap1 = await db.snapshot.create({
       data: {
         siteId,
+        monitoredUrlId,
         contentHash: sha256(beforeText),
         htmlGz: fakeGz(`<html>${beforeText}</html>`),
         textGz:  fakeGz(beforeText),
@@ -279,6 +300,7 @@ async function main() {
     const snap2 = await db.snapshot.create({
       data: {
         siteId,
+        monitoredUrlId,
         contentHash: sha256(afterText),
         htmlGz: fakeGz(`<html>${afterText}</html>`),
         textGz:  fakeGz(afterText),
@@ -290,6 +312,7 @@ async function main() {
     await db.change.create({
       data: {
         siteId,
+        monitoredUrlId,
         fromSnapshotId:  snap1.id,
         toSnapshotId:    snap2.id,
         fromContentHash: snap1.contentHash,
