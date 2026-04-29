@@ -3,11 +3,10 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { PollButton } from "./poll-button";
 import { formatDistanceToNow } from "@/lib/time";
-import { ExternalLink, Pause, Play, ChevronRight } from "lucide-react";
+import { Pause, Play, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 
 interface MonitoredUrlRowProps {
@@ -22,11 +21,11 @@ interface MonitoredUrlRowProps {
   };
 }
 
-const FETCH_MODE_BADGE: Record<string, string> = {
-  STATIC: "bg-emerald-50 text-emerald-700 border-emerald-200",
-  PLAYWRIGHT: "bg-blue-50 text-blue-700 border-blue-200",
-  STEALTH: "bg-violet-50 text-violet-700 border-violet-200",
-  EXTERNAL: "bg-amber-50 text-amber-700 border-amber-200",
+const FETCH_TONE: Record<string, string> = {
+  STATIC: "pill-green",
+  PLAYWRIGHT: "pill-blue",
+  STEALTH: "pill-indigo",
+  EXTERNAL: "pill-orange",
 };
 
 export function MonitoredUrlRow({ url }: MonitoredUrlRowProps) {
@@ -50,64 +49,69 @@ export function MonitoredUrlRow({ url }: MonitoredUrlRowProps) {
     }
   };
 
-  const failingBadge =
-    url.consecutiveFailures > 0
-      ? `${url.consecutiveFailures}× ${url.lastFailureKind ?? "fail"}`
-      : null;
-
   return (
     <div
-      className="flex items-center gap-3 px-4 py-3 border-b last:border-b-0"
-      style={{ borderColor: "var(--border, #E8E8F2)" }}
+      className="flex items-center gap-3 px-5 py-3.5 transition-colors"
+      style={{ borderBottom: "1px solid var(--border)" }}
+      onMouseEnter={(e) => (e.currentTarget.style.background = "var(--background-2)")}
+      onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
     >
       <Link
         href={`/urls/${url.id}`}
-        className="flex-1 min-w-0 flex items-center gap-2 hover:text-violet-700"
+        className="flex-1 min-w-0 flex items-center gap-2 transition-colors"
+        style={{
+          fontSize: 13.5,
+          color: "var(--foreground)",
+          letterSpacing: "-0.005em",
+        }}
       >
-        <span className="text-sm truncate" style={{ fontFamily: "var(--font-mono, monospace)" }}>
-          {url.url}
-        </span>
-        <ExternalLink className="h-3 w-3 text-muted-foreground shrink-0" />
+        <span className="mono truncate">{url.url}</span>
       </Link>
 
-      <Badge variant="outline" className={`text-[10px] ${FETCH_MODE_BADGE[url.fetchMode] ?? ""}`}>
+      <span className={`pill ${FETCH_TONE[url.fetchMode] ?? "pill-muted"}`}>
         {url.fetchMode}
-      </Badge>
+      </span>
 
-      {url.paused && (
-        <Badge variant="outline" className="text-[10px] bg-muted/50 text-muted-foreground">
-          Paused
-        </Badge>
+      {url.paused && <span className="pill pill-muted">Paused</span>}
+
+      {url.consecutiveFailures > 0 && (
+        <span className="pill pill-red tabular">
+          {url.consecutiveFailures}× {url.lastFailureKind?.toLowerCase() ?? "fail"}
+        </span>
       )}
 
-      {failingBadge && (
-        <Badge variant="outline" className="text-[10px] bg-red-50 text-red-700 border-red-200">
-          {failingBadge}
-        </Badge>
-      )}
-
-      <span className="text-[11px] text-muted-foreground hidden sm:inline">
+      <span className="hidden sm:inline label-mono shrink-0">
         {url.lastCheckedAt ? formatDistanceToNow(url.lastCheckedAt) : "never"}
       </span>
 
-      <PollButton monitoredUrlId={url.id} />
+      <div className="flex items-center gap-1">
+        <PollButton monitoredUrlId={url.id} />
 
-      <Button
-        variant="ghost"
-        size="sm"
-        className="h-7 w-7 p-0"
-        onClick={togglePaused}
-        disabled={toggling}
-      >
-        {url.paused ? <Play className="h-3 w-3" /> : <Pause className="h-3 w-3" />}
-      </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-8 w-8 p-0"
+          onClick={togglePaused}
+          disabled={toggling}
+          title={url.paused ? "Resume" : "Pause"}
+        >
+          {url.paused ? (
+            <Play className="h-3.5 w-3.5" strokeWidth={2} />
+          ) : (
+            <Pause className="h-3.5 w-3.5" strokeWidth={2} />
+          )}
+        </Button>
 
-      <Link
-        href={`/urls/${url.id}`}
-        className="h-7 w-7 inline-flex items-center justify-center text-muted-foreground hover:text-foreground"
-      >
-        <ChevronRight className="h-4 w-4" />
-      </Link>
+        <Link
+          href={`/urls/${url.id}`}
+          className="h-8 w-8 inline-flex items-center justify-center transition-colors rounded-md"
+          style={{ color: "var(--foreground-3)" }}
+          onMouseEnter={(e) => (e.currentTarget.style.color = "var(--foreground)")}
+          onMouseLeave={(e) => (e.currentTarget.style.color = "var(--foreground-3)")}
+        >
+          <ChevronRight className="h-4 w-4" strokeWidth={2} />
+        </Link>
+      </div>
     </div>
   );
 }

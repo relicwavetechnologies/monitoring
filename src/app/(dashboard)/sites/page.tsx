@@ -92,22 +92,16 @@ export default async function SitesPage() {
           {sites.map((site, idx) => {
             const lastChange = site.changes[0];
             return (
-              <Link
+              <div
                 key={site.id}
-                href={`/sites/${site.id}`}
-                className="group flex items-center gap-4 px-5 py-4 transition-colors"
+                className="row-hover group flex items-center gap-4 px-5 py-4"
                 style={{
-                  borderBottom: idx === sites.length - 1 ? "none" : "1px solid var(--border)",
+                  borderBottom:
+                    idx === sites.length - 1 ? "none" : "1px solid var(--border)",
                 }}
-                onMouseEnter={(e) =>
-                  (e.currentTarget.style.background = "var(--background-2)")
-                }
-                onMouseLeave={(e) =>
-                  (e.currentTarget.style.background = "transparent")
-                }
               >
-                {/* Site identity */}
-                <div className="flex-1 min-w-0">
+                {/* Site identity (link target) */}
+                <Link href={`/sites/${site.id}`} className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span
                       className="truncate"
@@ -145,12 +139,16 @@ export default async function SitesPage() {
                     <span className="mono">{new URL(site.url).hostname}</span>
                     <ExternalLink className="h-3 w-3 opacity-60 shrink-0" />
                     <span className="opacity-50 mx-1">·</span>
-                    <span>{site._count.monitoredUrls} URL{site._count.monitoredUrls !== 1 ? "s" : ""}</span>
+                    <span>
+                      {site._count.monitoredUrls} URL
+                      {site._count.monitoredUrls !== 1 ? "s" : ""}
+                    </span>
                   </div>
-                </div>
+                </Link>
 
                 {/* Last change */}
-                <div
+                <Link
+                  href={`/sites/${site.id}`}
                   className="hidden md:flex items-center gap-2 max-w-[260px] min-w-0"
                   style={{ fontSize: 12.5, color: "var(--foreground-3)" }}
                 >
@@ -162,18 +160,20 @@ export default async function SitesPage() {
                   ) : (
                     <span style={{ color: "var(--foreground-4)" }}>No changes yet</span>
                   )}
-                </div>
+                </Link>
 
-                {/* Last check */}
-                <div
+                <Link
+                  href={`/sites/${site.id}`}
                   className="hidden lg:block label-mono shrink-0"
                   style={{ minWidth: 80, textAlign: "right" }}
                 >
-                  {site.lastCheckedAt ? formatDistanceToNow(site.lastCheckedAt) : "—"}
-                </div>
+                  {site.lastCheckedAt
+                    ? formatDistanceToNow(site.lastCheckedAt)
+                    : "—"}
+                </Link>
 
-                {/* Total changes */}
-                <div
+                <Link
+                  href={`/sites/${site.id}`}
                   className="tabular shrink-0"
                   style={{
                     fontSize: 13,
@@ -185,17 +185,21 @@ export default async function SitesPage() {
                   }}
                 >
                   {site._count.changes}
-                </div>
+                </Link>
 
-                <div onClick={(e) => e.stopPropagation()}>
-                  <PollButton siteId={site.id} />
-                </div>
+                <PollButton siteId={site.id} />
 
-                <ChevronRight
-                  className="h-4 w-4 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                  style={{ color: "var(--foreground-3)" }}
-                />
-              </Link>
+                <Link
+                  href={`/sites/${site.id}`}
+                  className="opacity-0 group-hover:opacity-100 transition-opacity"
+                  aria-label={`Open ${site.name}`}
+                >
+                  <ChevronRight
+                    className="h-4 w-4 shrink-0"
+                    style={{ color: "var(--foreground-3)" }}
+                  />
+                </Link>
+              </div>
             );
           })}
         </div>

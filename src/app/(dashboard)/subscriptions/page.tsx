@@ -20,11 +20,13 @@ export default async function SubscriptionsPage() {
   ]);
 
   return (
-    <div className="max-w-3xl mx-auto">
+    <div className="max-w-3xl mx-auto pb-12 animate-fade-up">
       <div className="mb-8">
-        <h1 className="text-xl font-semibold">Subscriptions</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Choose where alerts go. Each subscription is scoped to a site and a delivery channel.
+        <span className="eyebrow inline-block mb-3">Notifications</span>
+        <h1 className="hero-title">Subscriptions</h1>
+        <p className="hero-sub mt-3 max-w-2xl">
+          Choose where alerts go. Each subscription is scoped to a site and a delivery channel —
+          email, Slack, or a generic webhook.
         </p>
       </div>
       <SubscriptionsManager initial={subs} sites={sites} />

@@ -1,27 +1,17 @@
 import { db } from "@/lib/db";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 import { ChangeCard } from "@/components/dashboard/change-card";
 import { PollButton } from "@/components/dashboard/poll-button";
 import { UrlConfigForm } from "@/components/dashboard/url-config-form";
 import { formatDistanceToNow } from "@/lib/time";
-import {
-  ArrowLeft,
-  ExternalLink,
-  Activity,
-  AlertTriangle,
-  Clock,
-  BarChart2,
-} from "lucide-react";
+import { ArrowLeft, ExternalLink } from "lucide-react";
 
-const FETCH_MODE_BADGE: Record<string, string> = {
-  STATIC: "bg-emerald-50 text-emerald-700 border-emerald-200",
-  PLAYWRIGHT: "bg-blue-50 text-blue-700 border-blue-200",
-  STEALTH: "bg-violet-50 text-violet-700 border-violet-200",
-  EXTERNAL: "bg-amber-50 text-amber-700 border-amber-200",
+const FETCH_TONE: Record<string, string> = {
+  STATIC: "pill-green",
+  PLAYWRIGHT: "pill-blue",
+  STEALTH: "pill-indigo",
+  EXTERNAL: "pill-orange",
 };
 
 export default async function MonitoredUrlPage({
@@ -60,82 +50,123 @@ export default async function MonitoredUrlPage({
   const changesWithSite = url.changes.map((c) => ({ ...c, site: siteForCard }));
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-4xl mx-auto pb-12 animate-fade-up">
       <Link
         href={`/sites/${url.site.id}`}
-        className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6"
+        className="subtle-link inline-flex items-center gap-1.5 mb-6"
+        style={{ fontSize: 13, letterSpacing: "-0.011em" }}
       >
-        <ArrowLeft className="h-4 w-4" />
+        <ArrowLeft className="h-4 w-4" strokeWidth={2} />
         {url.site.name}
       </Link>
 
+      {/* Hero */}
       <div className="mb-6">
-        <div className="flex items-center gap-2 mb-2 flex-wrap">
-          <h1 className="text-lg font-semibold break-all">{url.url}</h1>
+        <span className="eyebrow inline-block mb-3">Monitored URL</span>
+        <div className="flex items-center gap-3 flex-wrap mb-3">
+          <h1
+            className="break-all"
+            style={{
+              fontSize: 24,
+              fontWeight: 700,
+              letterSpacing: "-0.022em",
+              lineHeight: 1.18,
+              color: "var(--foreground)",
+            }}
+          >
+            {url.url}
+          </h1>
           <a
             href={url.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-muted-foreground hover:text-foreground"
+            className="accent-link"
           >
-            <ExternalLink className="h-4 w-4" />
+            <ExternalLink className="h-4 w-4" strokeWidth={1.85} />
           </a>
         </div>
+
         <div className="flex items-center gap-2 flex-wrap">
-          <Badge variant="outline" className={`text-[10px] ${FETCH_MODE_BADGE[url.fetchMode] ?? ""}`}>
+          <span className={`pill ${FETCH_TONE[url.fetchMode] ?? "pill-muted"}`}>
             {url.fetchMode}
-          </Badge>
-          {url.paused && (
-            <Badge variant="outline" className="text-[10px] bg-muted/50 text-muted-foreground">
-              Paused
-            </Badge>
-          )}
-          {url.consecutiveFailures > 0 && (
-            <Badge variant="outline" className="text-[10px] bg-red-50 text-red-700 border-red-200">
-              {url.consecutiveFailures}× {url.lastFailureKind ?? "fail"}
-            </Badge>
-          )}
-          <span className="text-xs text-muted-foreground ml-auto">
-            <PollButton monitoredUrlId={url.id} label="Poll now" />
           </span>
+          {url.paused && <span className="pill pill-muted">Paused</span>}
+          {url.consecutiveFailures > 0 && (
+            <span className="pill pill-red tabular">
+              {url.consecutiveFailures}× {url.lastFailureKind?.toLowerCase() ?? "fail"}
+            </span>
+          )}
+          <div className="ml-auto">
+            <PollButton monitoredUrlId={url.id} label="Poll now" />
+          </div>
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
+      {/* Stats grid */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-10">
         {[
-          { label: "Changes", value: url._count.changes, icon: BarChart2 },
-          { label: "Snapshots", value: url._count.snapshots, icon: Activity },
+          { label: "Changes", value: url._count.changes.toLocaleString() },
+          { label: "Snapshots", value: url._count.snapshots.toLocaleString() },
           {
             label: "Last check",
             value: url.lastCheckedAt ? formatDistanceToNow(url.lastCheckedAt) : "never",
-            icon: Clock,
           },
           {
             label: "Last failure",
             value: url.lastFailureAt ? formatDistanceToNow(url.lastFailureAt) : "—",
-            icon: AlertTriangle,
           },
-        ].map(({ label, value, icon: Icon }) => (
-          <Card key={label} className="bg-card border-border/50">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 pt-3 px-3">
-              <CardTitle className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
-                {label}
-              </CardTitle>
-              <Icon className="h-3.5 w-3.5 text-muted-foreground" />
-            </CardHeader>
-            <CardContent className="px-3 pb-3">
-              <div className="text-base font-semibold">{value}</div>
-            </CardContent>
-          </Card>
+        ].map(({ label, value }) => (
+          <div key={label} className="surface-flat p-4">
+            <div
+              style={{
+                fontSize: 11,
+                fontWeight: 500,
+                color: "var(--foreground-3)",
+                letterSpacing: "0.04em",
+                textTransform: "uppercase",
+              }}
+            >
+              {label}
+            </div>
+            <div
+              className="tabular mt-1.5"
+              style={{
+                fontSize: 18,
+                fontWeight: 600,
+                color: "var(--foreground)",
+                letterSpacing: "-0.018em",
+                lineHeight: 1.2,
+              }}
+            >
+              {value}
+            </div>
+          </div>
         ))}
       </div>
 
-      <Separator className="mb-8" />
-
       {/* Per-URL config */}
-      <div className="mb-8">
-        <h2 className="text-sm font-semibold mb-3">Per-URL configuration</h2>
+      <section className="surface mb-10" style={{ padding: 22 }}>
+        <h2
+          className="mb-1"
+          style={{
+            fontSize: 16,
+            fontWeight: 600,
+            letterSpacing: "-0.018em",
+            color: "var(--foreground)",
+          }}
+        >
+          Configuration
+        </h2>
+        <p
+          className="mb-5"
+          style={{
+            fontSize: 13,
+            color: "var(--foreground-3)",
+            letterSpacing: "-0.005em",
+          }}
+        >
+          Per-URL settings — selectors, fetch tier, escalation, mute patterns.
+        </p>
         <UrlConfigForm
           url={{
             id: url.id,
@@ -148,28 +179,38 @@ export default async function MonitoredUrlPage({
             mutePatterns: url.mutePatterns,
           }}
         />
-      </div>
-
-      <Separator className="mb-8" />
+      </section>
 
       {/* Changes */}
-      <div>
+      <section>
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-semibold">Changes for this URL</h2>
-          <span className="text-xs text-muted-foreground">{url._count.changes} total</span>
+          <h2
+            style={{
+              fontSize: 16,
+              fontWeight: 600,
+              letterSpacing: "-0.018em",
+              color: "var(--foreground)",
+            }}
+          >
+            Changes for this URL
+          </h2>
+          <span className="pill pill-muted tabular">{url._count.changes}</span>
         </div>
         {url.changes.length === 0 ? (
-          <p className="text-sm text-muted-foreground border border-dashed rounded-lg p-6 text-center">
-            No changes detected yet.
-          </p>
+          <div
+            className="surface-flat py-12 text-center"
+            style={{ borderStyle: "dashed", color: "var(--foreground-3)" }}
+          >
+            <p style={{ fontSize: 14, letterSpacing: "-0.011em" }}>No changes detected yet.</p>
+          </div>
         ) : (
-          <div className="rounded-md overflow-hidden" style={{ border: "1px solid var(--border, #E8E8F2)" }}>
+          <div className="surface-flat overflow-hidden">
             {changesWithSite.map((c) => (
               <ChangeCard key={c.id} change={c} showSite={false} />
             ))}
           </div>
         )}
-      </div>
+      </section>
     </div>
   );
 }

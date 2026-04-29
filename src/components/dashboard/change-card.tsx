@@ -57,12 +57,7 @@ export function ChangeCard({ change, showSite = true }: ChangeCardProps) {
         }}
       />
 
-      <div
-        className="flex-1 px-5 py-4 min-w-0 transition-colors"
-        style={{ background: "transparent" }}
-        onMouseEnter={(e) => (e.currentTarget.style.background = "var(--background-2)")}
-        onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
-      >
+      <div className="row-hover flex-1 px-5 py-4 min-w-0">
         {/* Top meta row */}
         <div className="flex items-center gap-2 mb-1.5 flex-wrap">
           {showSite && (

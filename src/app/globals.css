@@ -420,6 +420,69 @@
 .divider-soft   { border-top: 1px solid var(--border); }
 .divider-strong { border-top: 1px solid var(--border-2); }
 
+/* ── Hover helpers (CSS-only, safe in Server Components) ─────────── */
+
+.row-hover {
+  transition: background 0.15s var(--ease-standard);
+}
+.row-hover:hover { background: var(--background-2); }
+
+.subtle-link {
+  transition: color 0.15s var(--ease-standard);
+  color: var(--foreground-3);
+}
+.subtle-link:hover { color: var(--foreground); }
+
+.accent-link {
+  transition: color 0.15s var(--ease-standard);
+  color: var(--foreground-3);
+}
+.accent-link:hover { color: var(--primary); }
+
+.btn-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: var(--radius-pill);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: -0.011em;
+  background: var(--primary);
+  color: white;
+  box-shadow: 0 1px 2px rgba(0,113,227,0.30);
+  transition: background 0.18s var(--ease-standard), box-shadow 0.18s var(--ease-standard), transform 0.18s var(--ease-standard);
+  cursor: pointer;
+  border: none;
+}
+.btn-pill:hover {
+  background: var(--primary-hover);
+  box-shadow: 0 2px 8px rgba(0,113,227,0.35);
+}
+.btn-pill:active { transform: scale(0.98); }
+
+.btn-pill-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: var(--radius-pill);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: -0.011em;
+  background: var(--background-1);
+  color: var(--foreground);
+  border: 1px solid var(--border);
+  transition: background 0.18s var(--ease-standard), border-color 0.18s var(--ease-standard);
+  cursor: pointer;
+}
+.btn-pill-secondary:hover {
+  background: var(--background-2);
+  border-color: var(--border-2);
+}
+
 /* ── Animations ──────────────────────────────────────────────────── */
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(4px); }
