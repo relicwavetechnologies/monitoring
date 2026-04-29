@@ -1,167 +1,203 @@
 import { db } from "@/lib/db";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { SeverityBadge, SeverityDot } from "@/components/dashboard/severity-badge";
+import { SeverityDot } from "@/components/dashboard/severity-badge";
 import { formatDistanceToNow } from "@/lib/time";
-import { Plus, Globe, CheckCircle2, XCircle, RefreshCw, ExternalLink } from "lucide-react";
+import { Plus, Globe, ExternalLink, ChevronRight } from "lucide-react";
 import { PollButton } from "@/components/dashboard/poll-button";
 
 export default async function SitesPage() {
   const sites = await db.site.findMany({
     orderBy: { createdAt: "asc" },
     include: {
-      _count: { select: { changes: true, snapshots: true } },
+      _count: { select: { changes: true, snapshots: true, monitoredUrls: true } },
       changes: {
         orderBy: { detectedAt: "desc" },
         take: 1,
-        select: { severity: true, summary: true, detectedAt: true, category: true, id: true },
+        select: { severity: true, summary: true, detectedAt: true, id: true },
       },
     },
   });
 
   return (
-    <div className="max-w-6xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
+    <div className="max-w-5xl mx-auto pb-12">
+      <div className="flex items-end justify-between mb-8 animate-fade-up">
         <div>
-          <h1 className="text-xl font-semibold">Sites</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            {sites.length} site{sites.length !== 1 ? "s" : ""} monitored
+          <span className="eyebrow inline-block mb-3">Catalogue</span>
+          <h1 className="hero-title">Sites</h1>
+          <p className="hero-sub mt-2">
+            {sites.length} site{sites.length !== 1 ? "s" : ""} monitored ·
+            {" "}
+            {sites.reduce((acc, s) => acc + s._count.monitoredUrls, 0)} URLs
           </p>
         </div>
         <Link href="/sites/new">
-          <Button size="sm" className="gap-1.5">
-            <Plus className="h-4 w-4" />
-            Add Site
+          <Button
+            className="gap-1.5 rounded-full px-4 h-9"
+            style={{
+              background: "var(--primary)",
+              color: "white",
+              fontWeight: 500,
+              fontSize: 13,
+              letterSpacing: "-0.011em",
+              boxShadow: "0 1px 2px rgba(0,113,227,0.30)",
+            }}
+          >
+            <Plus className="h-4 w-4" strokeWidth={2.4} />
+            Add site
           </Button>
         </Link>
       </div>
 
       {sites.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-24 text-center border border-dashed border-border/50 rounded-xl">
-          <Globe className="h-10 w-10 text-muted-foreground mb-3" />
-          <p className="text-lg font-medium">No sites yet</p>
-          <p className="text-sm text-muted-foreground mt-1 mb-4">
+        <div
+          className="flex flex-col items-center justify-center py-24 text-center surface-flat"
+          style={{ borderStyle: "dashed" }}
+        >
+          <div
+            className="h-12 w-12 rounded-full flex items-center justify-center mb-3"
+            style={{ background: "var(--background-2)" }}
+          >
+            <Globe className="h-6 w-6" strokeWidth={1.6} style={{ color: "var(--foreground-4)" }} />
+          </div>
+          <p
+            className="text-base font-semibold"
+            style={{ color: "var(--foreground)", letterSpacing: "-0.014em" }}
+          >
+            No sites yet
+          </p>
+          <p
+            className="mt-1.5 mb-5"
+            style={{ color: "var(--foreground-3)", fontSize: 14 }}
+          >
             Add your first visa site to start monitoring.
           </p>
           <Link href="/sites/new">
-            <Button size="sm" className="gap-1.5">
+            <Button
+              className="rounded-full px-4 h-9 gap-1.5"
+              style={{
+                background: "var(--primary)",
+                color: "white",
+                fontWeight: 500,
+                fontSize: 13,
+              }}
+            >
               <Plus className="h-4 w-4" />
-              Add Site
+              Add site
             </Button>
           </Link>
         </div>
       ) : (
-        <div className="border border-border/50 rounded-xl overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow className="border-border/50 bg-muted/20 hover:bg-muted/20">
-                <TableHead className="pl-4 text-xs font-medium">Site</TableHead>
-                <TableHead className="text-xs font-medium">Status</TableHead>
-                <TableHead className="text-xs font-medium">Last Check</TableHead>
-                <TableHead className="text-xs font-medium">Last Change</TableHead>
-                <TableHead className="text-xs font-medium">Changes</TableHead>
-                <TableHead className="text-xs font-medium">Mode</TableHead>
-                <TableHead className="w-24" />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {sites.map((site) => {
-                const lastChange = site.changes[0];
-                return (
-                  <TableRow key={site.id} className="border-border/50 hover:bg-muted/10 group">
-                    <TableCell className="pl-4">
-                      <div className="flex flex-col gap-0.5">
-                        <Link
-                          href={`/sites/${site.id}`}
-                          className="font-medium text-sm hover:text-violet-700 transition-colors"
-                        >
-                          {site.name}
-                        </Link>
-                        <a
-                          href={site.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
-                        >
-                          {new URL(site.url).hostname}
-                          <ExternalLink className="h-3 w-3" />
-                        </a>
-                      </div>
-                    </TableCell>
+        <div className="surface-flat overflow-hidden">
+          {sites.map((site, idx) => {
+            const lastChange = site.changes[0];
+            return (
+              <Link
+                key={site.id}
+                href={`/sites/${site.id}`}
+                className="group flex items-center gap-4 px-5 py-4 transition-colors"
+                style={{
+                  borderBottom: idx === sites.length - 1 ? "none" : "1px solid var(--border)",
+                }}
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.background = "var(--background-2)")
+                }
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.background = "transparent")
+                }
+              >
+                {/* Site identity */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span
+                      className="truncate"
+                      style={{
+                        fontSize: 14.5,
+                        fontWeight: 600,
+                        color: "var(--foreground)",
+                        letterSpacing: "-0.014em",
+                      }}
+                    >
+                      {site.name}
+                    </span>
+                    {site.isActive ? (
+                      <span className="pill pill-green" style={{ fontSize: 10.5 }}>
+                        <span
+                          className="w-1.5 h-1.5 rounded-full inline-block"
+                          style={{ background: "var(--green)" }}
+                        />
+                        Active
+                      </span>
+                    ) : (
+                      <span className="pill pill-muted" style={{ fontSize: 10.5 }}>
+                        Paused
+                      </span>
+                    )}
+                  </div>
+                  <div
+                    className="flex items-center gap-1.5 mt-0.5 truncate"
+                    style={{
+                      fontSize: 12.5,
+                      color: "var(--foreground-3)",
+                      letterSpacing: "-0.005em",
+                    }}
+                  >
+                    <span className="mono">{new URL(site.url).hostname}</span>
+                    <ExternalLink className="h-3 w-3 opacity-60 shrink-0" />
+                    <span className="opacity-50 mx-1">·</span>
+                    <span>{site._count.monitoredUrls} URL{site._count.monitoredUrls !== 1 ? "s" : ""}</span>
+                  </div>
+                </div>
 
-                    <TableCell>
-                      {site.isActive ? (
-                        <div className="flex items-center gap-1.5 text-emerald-600 text-xs font-medium">
-                          <CheckCircle2 className="h-3.5 w-3.5" />
-                          Active
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-1.5 text-muted-foreground text-xs font-medium">
-                          <XCircle className="h-3.5 w-3.5" />
-                          Paused
-                        </div>
-                      )}
-                    </TableCell>
+                {/* Last change */}
+                <div
+                  className="hidden md:flex items-center gap-2 max-w-[260px] min-w-0"
+                  style={{ fontSize: 12.5, color: "var(--foreground-3)" }}
+                >
+                  {lastChange ? (
+                    <>
+                      <SeverityDot severity={lastChange.severity} />
+                      <span className="line-clamp-1">{lastChange.summary}</span>
+                    </>
+                  ) : (
+                    <span style={{ color: "var(--foreground-4)" }}>No changes yet</span>
+                  )}
+                </div>
 
-                    <TableCell className="text-xs text-muted-foreground">
-                      {site.lastCheckedAt ? formatDistanceToNow(site.lastCheckedAt) : "—"}
-                    </TableCell>
+                {/* Last check */}
+                <div
+                  className="hidden lg:block label-mono shrink-0"
+                  style={{ minWidth: 80, textAlign: "right" }}
+                >
+                  {site.lastCheckedAt ? formatDistanceToNow(site.lastCheckedAt) : "—"}
+                </div>
 
-                    <TableCell>
-                      {lastChange ? (
-                        <div className="flex items-center gap-2">
-                          <SeverityDot severity={lastChange.severity} />
-                          <Link
-                            href={`/changes/${lastChange.id}`}
-                            className="text-xs text-muted-foreground hover:text-foreground line-clamp-1 max-w-[200px] transition-colors"
-                          >
-                            {lastChange.summary}
-                          </Link>
-                        </div>
-                      ) : (
-                        <span className="text-xs text-muted-foreground">—</span>
-                      )}
-                    </TableCell>
+                {/* Total changes */}
+                <div
+                  className="tabular shrink-0"
+                  style={{
+                    fontSize: 13,
+                    fontWeight: 600,
+                    color: "var(--foreground)",
+                    minWidth: 32,
+                    textAlign: "right",
+                    letterSpacing: "-0.011em",
+                  }}
+                >
+                  {site._count.changes}
+                </div>
 
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium">{site._count.changes}</span>
-                        {lastChange && (
-                          <SeverityBadge severity={lastChange.severity} />
-                        )}
-                      </div>
-                    </TableCell>
+                <div onClick={(e) => e.stopPropagation()}>
+                  <PollButton siteId={site.id} />
+                </div>
 
-                    <TableCell>
-                      <Badge variant="outline" className="text-[11px] border-border/50">
-                        {site.renderMode}
-                      </Badge>
-                    </TableCell>
-
-                    <TableCell className="pr-4">
-                      <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <PollButton siteId={site.id} />
-                        <Link href={`/sites/${site.id}`}>
-                          <Button variant="ghost" size="sm" className="h-7 px-2 text-xs">
-                            View
-                          </Button>
-                        </Link>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
+                <ChevronRight
+                  className="h-4 w-4 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                  style={{ color: "var(--foreground-3)" }}
+                />
+              </Link>
+            );
+          })}
         </div>
       )}
     </div>

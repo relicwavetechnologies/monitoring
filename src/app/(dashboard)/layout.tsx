@@ -10,11 +10,11 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   return (
     <AuthSessionProvider>
-      <div className="flex h-screen overflow-hidden bg-background">
+      <div className="flex h-screen overflow-hidden" style={{ background: "var(--background)" }}>
         <Sidebar />
         <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
           <Topbar />
-          <main className="flex-1 overflow-y-auto p-6">{children}</main>
+          <main className="flex-1 overflow-y-auto px-6 py-8 md:px-10 md:py-10">{children}</main>
         </div>
       </div>
     </AuthSessionProvider>

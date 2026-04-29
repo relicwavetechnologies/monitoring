@@ -28,113 +28,93 @@ const CATEGORY_LABELS: Record<ChangeCategory, string> = {
   UNKNOWN:              "Unknown",
 };
 
-// Accent-line colour for severity — just a thin strip, nothing more
-const SEV_COLOR: Record<number, string> = {
-  1: "#D4D4E8",
-  2: "#9494B0",
-  3: "#D97706",
-  4: "#EF4444",
-  5: "#DC2626",
-};
-
-const SEV_LABEL: Record<number, string> = {
-  1: "minimal",
-  2: "minor",
-  3: "notable",
-  4: "important",
-  5: "critical",
+// Accent stripe colour per severity using the new system tokens.
+const SEV_STRIPE: Record<number, string> = {
+  1: "var(--border-2)",
+  2: "var(--foreground-4)",
+  3: "var(--orange)",
+  4: "var(--red)",
+  5: "var(--red)",
 };
 
 export function ChangeCard({ change, showSite = true }: ChangeCardProps) {
   const sev = Math.max(1, Math.min(5, change.severity));
-  const accentColor = SEV_COLOR[sev];
+  const stripe = SEV_STRIPE[sev];
 
   return (
-    <div
-      className="group relative flex gap-0"
-      style={{ borderBottom: "1px solid var(--border, #E8E8F2)" }}
+    <Link
+      href={`/changes/${change.id}`}
+      className="group relative flex transition-colors"
+      style={{ borderBottom: "1px solid var(--border)" }}
     >
-      {/* Left severity strip — 2px, full height */}
-      <div
-        className="shrink-0 w-0.5 rounded-full my-4"
-        style={{ background: accentColor, marginLeft: 0 }}
+      {/* Left severity stripe — 3px wide, only visible on notable+ */}
+      <span
+        aria-hidden
+        className="shrink-0 self-stretch"
+        style={{
+          width: 3,
+          background: sev >= 3 ? stripe : "transparent",
+        }}
       />
 
-      {/* Content */}
-      <div className="flex-1 py-4 px-4 min-w-0">
+      <div
+        className="flex-1 px-5 py-4 min-w-0 transition-colors"
+        style={{ background: "transparent" }}
+        onMouseEnter={(e) => (e.currentTarget.style.background = "var(--background-2)")}
+        onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+      >
         {/* Top meta row */}
-        <div className="flex items-center gap-2 mb-2">
-          {/* Site name */}
+        <div className="flex items-center gap-2 mb-1.5 flex-wrap">
           {showSite && (
-            <Link
-              href={`/sites/${change.site.id}`}
-              className="flex items-center gap-1 transition-colors"
-              style={{ fontFamily: "var(--font-mono, monospace)", fontSize: 11, color: "var(--foreground-3, #9494B0)" }}
-            >
-              {change.site.name}
-              <ExternalLink size={10} />
-            </Link>
-          )}
-
-          {/* Category — mono uppercase, no background */}
-          <span
-            style={{
-              fontFamily: "var(--font-mono, monospace)",
-              fontSize: 10,
-              fontWeight: 600,
-              textTransform: "uppercase",
-              letterSpacing: "0.12em",
-              color: accentColor,
-            }}
-          >
-            {CATEGORY_LABELS[change.category]}
-          </span>
-
-          {/* Severity label — only when notable+ */}
-          {sev >= 3 && (
             <span
+              className="inline-flex items-center gap-1 truncate max-w-[40%]"
               style={{
-                fontFamily: "var(--font-mono, monospace)",
-                fontSize: 10,
-                color: "var(--foreground-3, #9494B0)",
+                fontSize: 12,
+                color: "var(--foreground-3)",
+                fontWeight: 500,
+                letterSpacing: "-0.011em",
               }}
             >
-              · {SEV_LABEL[sev]}
+              {change.site.name}
+              <ExternalLink size={10} strokeWidth={2} className="shrink-0 opacity-70" />
             </span>
           )}
 
-          {/* Timestamp — pushed right */}
-          <span
-            className="ml-auto"
-            style={{ fontFamily: "var(--font-mono, monospace)", fontSize: 10, color: "var(--foreground-3, #9494B0)" }}
-          >
+          <span className={`pill pill-${sev >= 4 ? "red" : sev >= 3 ? "orange" : "muted"}`}>
+            {CATEGORY_LABELS[change.category]}
+          </span>
+
+          <span className="ml-auto label-mono shrink-0">
             {formatDistanceToNow(change.detectedAt)}
           </span>
         </div>
 
-        {/* Summary — the main event */}
-        <Link href={`/changes/${change.id}`} className="group/link block">
-          <p
-            className="text-sm font-semibold leading-snug transition-colors group-hover/link:underline"
-            style={{
-              color: "var(--foreground, #0D0D1C)",
-              textUnderlineOffset: 2,
-            }}
-          >
-            {change.summary}
-          </p>
-        </Link>
+        <p
+          className="leading-snug"
+          style={{
+            color: "var(--foreground)",
+            fontWeight: 600,
+            fontSize: 14.5,
+            letterSpacing: "-0.014em",
+          }}
+        >
+          {change.summary}
+        </p>
 
-        {/* Detail — one line, muted */}
         {change.detail && (
           <p
-            className="mt-1 line-clamp-1"
-            style={{ fontSize: 13, color: "var(--foreground-2, #5A5A7A)", lineHeight: 1.55 }}
+            className="mt-1 line-clamp-2"
+            style={{
+              fontSize: 13.5,
+              color: "var(--foreground-3)",
+              lineHeight: 1.5,
+              letterSpacing: "-0.005em",
+            }}
           >
             {change.detail}
           </p>
         )}
       </div>
-    </div>
+    </Link>
   );
 }

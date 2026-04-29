@@ -14,54 +14,41 @@ async function StatsRow() {
   ]);
 
   const stats = [
-    { n: totalSites,   label: "Monitored sites",   sub: `${activeSites} active` },
-    { n: totalChanges, label: "Total changes",      sub: "all time" },
-    { n: highSeverity, label: "Notable changes",    sub: "severity ≥ 3" },
-    { n: activeSites,  label: "Sites OK",           sub: "no recent issues" },
+    { n: totalSites,   label: "Monitored sites", sub: `${activeSites} active` },
+    { n: totalChanges, label: "Total changes",   sub: "all time" },
+    { n: highSeverity, label: "Notable changes", sub: "severity ≥ 3" },
+    { n: activeSites,  label: "Sites OK",        sub: "no recent issues" },
   ];
 
   return (
-    /* Doc hero-stats: grid with 1px gap on --line bg */
-    <div
-      className="grid grid-cols-2 lg:grid-cols-4 mb-10"
-      style={{
-        gap: 1,
-        background: "var(--border, #E8E8F2)",
-        border: "1px solid var(--border, #E8E8F2)",
-        borderRadius: 6,
-        overflow: "hidden",
-      }}
-    >
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-10">
       {stats.map(({ n, label, sub }) => (
         <div
           key={label}
-          style={{ background: "var(--background-1, #F5F5FC)", padding: "22px 20px" }}
+          className="surface-raised p-5 animate-fade-up"
         >
-          {/* Italic serif number in accent */}
+          <div className="stat-number">{n.toLocaleString()}</div>
           <div
+            className="mt-2"
             style={{
-              fontFamily: '"Instrument Serif", Georgia, serif',
-              fontSize: 34,
-              fontStyle: "italic",
-              color: "#6C63FF",
-              lineHeight: 1,
-              marginBottom: 4,
-            }}
-          >
-            {n}
-          </div>
-          <div
-            style={{
-              fontSize: 11,
+              fontSize: 13,
               fontWeight: 500,
-              textTransform: "uppercase",
-              letterSpacing: "0.10em",
-              color: "var(--foreground-3, #9494B0)",
+              color: "var(--foreground)",
+              letterSpacing: "-0.011em",
             }}
           >
             {label}
           </div>
-          <div style={{ fontSize: 11, color: "var(--foreground-3, #9494B0)" }}>{sub}</div>
+          <div
+            style={{
+              fontSize: 12,
+              color: "var(--foreground-3)",
+              marginTop: 1,
+              letterSpacing: "-0.005em",
+            }}
+          >
+            {sub}
+          </div>
         </div>
       ))}
     </div>
@@ -81,43 +68,41 @@ async function RecentChanges() {
   if (changes.length === 0) {
     return (
       <div
-        className="flex flex-col items-center justify-center py-24 text-center border border-dashed rounded-md"
-        style={{ borderColor: "var(--border, #E8E8F2)", color: "var(--foreground-3, #9494B0)" }}
+        className="flex flex-col items-center justify-center py-24 text-center surface-flat"
+        style={{ borderStyle: "dashed" }}
       >
-        <CheckCircle2 className="h-10 w-10 mb-3" style={{ color: "var(--border-2, #D4D4E8)" }} />
-        <p className="text-base font-semibold" style={{ color: "var(--foreground, #0D0D1C)" }}>No changes detected yet</p>
-        <p className="text-sm mt-1">Add a site and trigger a poll to get started.</p>
+        <div
+          className="h-12 w-12 rounded-full flex items-center justify-center mb-3"
+          style={{ background: "var(--background-2)" }}
+        >
+          <CheckCircle2
+            className="h-6 w-6"
+            strokeWidth={1.6}
+            style={{ color: "var(--foreground-4)" }}
+          />
+        </div>
+        <p
+          className="text-base font-semibold"
+          style={{ color: "var(--foreground)", letterSpacing: "-0.014em" }}
+        >
+          No changes detected yet
+        </p>
+        <p
+          className="mt-1.5"
+          style={{ color: "var(--foreground-3)", fontSize: 14, letterSpacing: "-0.005em" }}
+        >
+          Add a site and trigger a poll to get started.
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-8">
       {significant.length > 0 && (
         <section>
-          {/* Doc pipeline-header style */}
-          <div
-            style={{
-              background: "var(--background-1, #F5F5FC)",
-              borderTop: "1px solid var(--border, #E8E8F2)",
-              borderLeft: "1px solid var(--border, #E8E8F2)",
-              borderRight: "1px solid var(--border, #E8E8F2)",
-              borderRadius: "6px 6px 0 0",
-              padding: "10px 16px",
-              display: "flex",
-              alignItems: "center",
-              gap: 12,
-            }}
-          >
-            <span style={{ fontFamily: "var(--font-mono, monospace)", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.12em", color: "var(--foreground-3, #9494B0)" }}>
-              Significant changes
-            </span>
-            <span style={{ fontFamily: "var(--font-mono, monospace)", fontSize: 10, color: "#6C63FF" }}>
-              {significant.length}
-            </span>
-          </div>
-          {/* List container — doc pipeline border */}
-          <div style={{ border: "1px solid var(--border, #E8E8F2)", borderTop: "none", borderRadius: "0 0 6px 6px", overflow: "hidden" }}>
+          <SectionHead label="Significant" count={significant.length} accent />
+          <div className="surface-flat overflow-hidden">
             {significant.map((c) => (
               <ChangeCard key={c.id} change={c} />
             ))}
@@ -127,21 +112,8 @@ async function RecentChanges() {
 
       {minor.length > 0 && (
         <section>
-          <div
-            style={{
-              background: "var(--background-1, #F5F5FC)",
-              borderTop: "1px solid var(--border, #E8E8F2)",
-              borderLeft: "1px solid var(--border, #E8E8F2)",
-              borderRight: "1px solid var(--border, #E8E8F2)",
-              borderRadius: "6px 6px 0 0",
-              padding: "10px 16px",
-            }}
-          >
-            <span style={{ fontFamily: "var(--font-mono, monospace)", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.12em", color: "var(--foreground-3, #9494B0)" }}>
-              Minor / Cosmetic
-            </span>
-          </div>
-          <div style={{ border: "1px solid var(--border, #E8E8F2)", borderTop: "none", borderRadius: "0 0 6px 6px", overflow: "hidden" }}>
+          <SectionHead label="Minor / cosmetic" count={minor.length} />
+          <div className="surface-flat overflow-hidden">
             {minor.map((c) => (
               <ChangeCard key={c.id} change={c} />
             ))}
@@ -152,46 +124,53 @@ async function RecentChanges() {
   );
 }
 
+function SectionHead({
+  label,
+  count,
+  accent,
+}: {
+  label: string;
+  count: number;
+  accent?: boolean;
+}) {
+  return (
+    <div className="flex items-baseline justify-between mb-3">
+      <h3
+        style={{
+          fontSize: 16,
+          fontWeight: 600,
+          letterSpacing: "-0.018em",
+          color: "var(--foreground)",
+        }}
+      >
+        {label}
+      </h3>
+      <span
+        className={`pill ${accent ? "pill-blue" : "pill-muted"} tabular`}
+      >
+        {count}
+      </span>
+    </div>
+  );
+}
+
 export default function OverviewPage() {
   return (
-    <div className="max-w-4xl mx-auto">
-      <div className="mb-8">
-        <div
-          style={{
-            fontFamily: "var(--font-mono, monospace)",
-            fontSize: 10,
-            fontWeight: 600,
-            textTransform: "uppercase",
-            letterSpacing: "0.15em",
-            color: "#6C63FF",
-            marginBottom: 10,
-          }}
-        >
-          Dashboard
-        </div>
-        <h1
-          style={{
-            fontFamily: '"Instrument Serif", Georgia, serif',
-            fontSize: 40,
-            fontWeight: 400,
-            letterSpacing: "-0.025em",
-            lineHeight: 1.05,
-            color: "var(--foreground, #0D0D1C)",
-            marginBottom: 8,
-          }}
-        >
-          Overview
-        </h1>
-        <p style={{ fontSize: 15, color: "var(--foreground-2, #5A5A7A)" }}>
-          All changes detected across your monitored visa sites.
+    <div className="max-w-5xl mx-auto pb-12">
+      {/* Hero */}
+      <div className="mb-10 animate-fade-up">
+        <span className="eyebrow mb-3 inline-block">Dashboard</span>
+        <h1 className="hero-title mt-2">Overview</h1>
+        <p className="hero-sub mt-3 max-w-2xl">
+          Every visa-related change detected across your monitored sites — sorted by what matters.
         </p>
       </div>
 
       <Suspense
         fallback={
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-px mb-10">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-10">
             {Array.from({ length: 4 }).map((_, i) => (
-              <Skeleton key={i} className="h-24 rounded-none" />
+              <Skeleton key={i} className="h-28 rounded-xl" />
             ))}
           </div>
         }
@@ -201,16 +180,9 @@ export default function OverviewPage() {
 
       <Suspense
         fallback={
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
-              gap: 10,
-              marginBottom: 40,
-            }}
-          >
+          <div className="grid gap-3 mb-10" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))" }}>
             {Array.from({ length: 4 }).map((_, i) => (
-              <Skeleton key={i} className="h-24 rounded-md" />
+              <Skeleton key={i} className="h-24 rounded-xl" />
             ))}
           </div>
         }
@@ -222,7 +194,7 @@ export default function OverviewPage() {
         fallback={
           <div className="space-y-3">
             {Array.from({ length: 3 }).map((_, i) => (
-              <Skeleton key={i} className="h-24 rounded-md" />
+              <Skeleton key={i} className="h-24 rounded-xl" />
             ))}
           </div>
         }
