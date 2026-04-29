@@ -76,40 +76,31 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
           set -eo pipefail
-          attempt() {
-            local out; out=$(mktemp)
-            set +e
-            pnpm exec prisma migrate deploy --schema prisma/schema.prisma 2>&1 | tee "$out"
-            local rc=${PIPESTATUS[0]}
-            set -e
-            echo "$rc:$out"
-          }
-
           for i in 1 2 3; do
-            res=$(attempt)
-            rc=${res%%:*}; out=${res#*:}
-            if [ "$rc" -eq 0 ]; then
+            OUT=$(mktemp)
+            set +e
+            pnpm exec prisma migrate deploy --schema prisma/schema.prisma 2>&1 | tee "$OUT"
+            RC=${PIPESTATUS[0]}
+            set -e
+            if [ "$RC" -eq 0 ]; then
               echo "Migrations applied cleanly (attempt $i)."
               exit 0
             fi
-            if grep -q 'P3005' "$out"; then
+            if grep -q 'P3005' "$OUT"; then
               echo "::warning::P3005 — baselining 0000_baseline."
               pnpm exec prisma migrate resolve --applied 0000_baseline --schema prisma/schema.prisma
               continue
             fi
-            if grep -qE 'P3018|P3009' "$out"; then
-              # Match our migration-name convention regardless of the prisma
-              # error format: P3018 says "Migration name: 0002_foo", P3009
-              # says "The `0002_foo` migration ... failed".
-              failed=$(grep -oE '[0-9]{4}_[a-z0-9_]+' "$out" | head -n1)
-              if [ -n "$failed" ]; then
-                echo "::warning::P3009/P3018 — rolling back $failed and retrying."
-                pnpm exec prisma migrate resolve --rolled-back "$failed" --schema prisma/schema.prisma
+            if grep -qE 'P3018|P3009' "$OUT"; then
+              FAILED=$(grep -oE '[0-9]{4}_[a-z0-9_]+' "$OUT" | head -n1)
+              if [ -n "$FAILED" ]; then
+                echo "::warning::P3009/P3018 — rolling back $FAILED and retrying."
+                pnpm exec prisma migrate resolve --rolled-back "$FAILED" --schema prisma/schema.prisma
                 continue
               fi
             fi
             echo "Migration failed for a non-recoverable reason — see logs above."
-            exit "$rc"
+            exit "$RC"
           done
           echo "Migrations did not converge after 3 attempts."
           exit 1
