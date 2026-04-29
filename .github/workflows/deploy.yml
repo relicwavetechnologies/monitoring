@@ -63,41 +63,54 @@ jobs:
       - name: Install deps (for prisma config)
         run: pnpm install --frozen-lockfile --ignore-scripts
 
-      # Phase 1: switched from `prisma db push` to `prisma migrate deploy`.
-      # The prod DB was originally provisioned by `db push` and so has no
-      # `_prisma_migrations` table. The first migrate-deploy run hits Prisma
-      # error P3005 ("schema is not empty"). The script below detects that
-      # exact case, runs `migrate resolve --applied 0000_baseline` to mark
-      # the existing schema as the baseline, then re-runs `migrate deploy`.
-      # Subsequent runs find a populated `_prisma_migrations` and skip the
-      # resolve step. This makes the deploy self-baselining and idempotent.
+      # Self-healing migrate deploy. Handles three first-time edge cases:
+      #   - P3005: schema exists but no _prisma_migrations table (legacy `db push`).
+      #            → mark 0000_baseline as applied, retry.
+      #   - P3018: a previous deploy left a migration in failed state.
+      #            → parse the failed name, mark it rolled-back, retry.
+      # On steady state both paths short-circuit immediately. Both recovery
+      # actions are explicitly safe: resolve doesn't run SQL, just updates
+      # the metadata table.
       - name: Apply migrations
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
-          # Critical: pipefail so `prisma | tee` propagates prisma's exit
-          # code instead of tee's. Without this the script always thinks
-          # the migration succeeded.
           set -eo pipefail
-          OUT=$(mktemp)
-          # Disable -e for the first attempt — we need to inspect a
-          # failure rather than die on it.
-          set +e
-          pnpm exec prisma migrate deploy --schema prisma/schema.prisma 2>&1 | tee "$OUT"
-          RC=${PIPESTATUS[0]}
-          set -e
-          if [ "$RC" -eq 0 ]; then
-            echo "Migrations applied cleanly."
-            exit 0
-          fi
-          if grep -q 'P3005' "$OUT"; then
-            echo "::warning::P3005 detected — baselining 0000_baseline against existing schema and retrying."
-            pnpm exec prisma migrate resolve --applied 0000_baseline --schema prisma/schema.prisma
-            pnpm exec prisma migrate deploy --schema prisma/schema.prisma
-            exit 0
-          fi
-          echo "Migration failed for a non-P3005 reason — see logs above."
-          exit "$RC"
+          attempt() {
+            local out; out=$(mktemp)
+            set +e
+            pnpm exec prisma migrate deploy --schema prisma/schema.prisma 2>&1 | tee "$out"
+            local rc=${PIPESTATUS[0]}
+            set -e
+            echo "$rc:$out"
+          }
+
+          for i in 1 2 3; do
+            res=$(attempt)
+            rc=${res%%:*}; out=${res#*:}
+            if [ "$rc" -eq 0 ]; then
+              echo "Migrations applied cleanly (attempt $i)."
+              exit 0
+            fi
+            if grep -q 'P3005' "$out"; then
+              echo "::warning::P3005 — baselining 0000_baseline."
+              pnpm exec prisma migrate resolve --applied 0000_baseline --schema prisma/schema.prisma
+              continue
+            fi
+            if grep -q 'P3018' "$out"; then
+              # Extract: "Migration name: 0002_phase2a_block_diff"
+              failed=$(grep -oE 'Migration name: [0-9_a-zA-Z]+' "$out" | head -n1 | awk '{print $3}')
+              if [ -n "$failed" ]; then
+                echo "::warning::P3018 — rolling back $failed and retrying."
+                pnpm exec prisma migrate resolve --rolled-back "$failed" --schema prisma/schema.prisma
+                continue
+              fi
+            fi
+            echo "Migration failed for a non-recoverable reason — see logs above."
+            exit "$rc"
+          done
+          echo "Migrations did not converge after 3 attempts."
+          exit 1
 
       - name: Deploy over SSH
         uses: appleboy/ssh-action@v1

@@ -6,7 +6,6 @@
 
 BEGIN;
 
-◇ injected env (0) from .env.local // tip: ◈ secrets for agents [www.dotenvx.com]
 -- CreateEnum
 CREATE TYPE "ClassifierStatus" AS ENUM ('VALIDATED', 'CLAMPED', 'UNGROUNDED', 'FALLBACK');
 

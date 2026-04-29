@@ -8,7 +8,6 @@
 
 BEGIN;
 
-◇ injected env (0) from .env.local // tip: ⌘ custom filepath { path: '/custom/path/.env' }
 -- AlterTable
 ALTER TABLE "Snapshot" ADD COLUMN     "blocksHash" TEXT,
 ADD COLUMN     "extractStrategy" TEXT NOT NULL DEFAULT 'SELECTOR';
