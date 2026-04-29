@@ -3,8 +3,10 @@ import { db } from "@/lib/db";
 import { crawlSite } from "@/lib/pipeline/crawl";
 import { fetchSite } from "@/lib/pipeline/fetch";
 import { extractContent } from "@/lib/pipeline/extract";
+import { extractBlocks, computeBlocksHash, type Block } from "@/lib/pipeline/extract-blocks";
 import { sha256, gzip } from "@/lib/pipeline/hash";
 import { computeDiff } from "@/lib/pipeline/diff";
+import { computeBlockDiff } from "@/lib/pipeline/diff-blocks";
 import { checkStability } from "@/lib/pipeline/stability";
 import { classifyChange, categoryToEnum } from "@/lib/pipeline/classify";
 import { maybeNotify } from "@/lib/pipeline/notify";
@@ -87,6 +89,34 @@ export async function runPoll(siteId: string): Promise<PollResult> {
     let httpStatus: number;
     let manifest: string;
 
+    // ── Block-level extraction (Phase 2a) ────────────────────────────────────
+    // Each crawled page contributes its own block list; we concatenate the
+    // lists with synthetic page-marker blocks so the diff engine can tell
+    // *which page* a block came from. Blocks across pages share the global
+    // hash space, so reordering pages and reordering blocks within a page
+    // are both no-ops.
+    const allBlocks: Block[] = [];
+    let strategy: "SELECTOR" | "READABILITY" | "BODY" = "SELECTOR";
+    const extractOpts = { selector: site.contentSelector, stripPatterns: site.stripPatterns };
+
+    function pushPageBlocks(html: string, pageMarker: string | null) {
+      if (pageMarker) {
+        // Synthetic h2 block uniquely identifies the page; never matches
+        // anything from another page so a swapped-out page is detectable.
+        allBlocks.push({
+          idx: allBlocks.length,
+          blockHash: sha256(`page:${pageMarker}`),
+          text: pageMarker,
+          kind: "h2",
+        });
+      }
+      const ext = extractBlocks(html, extractOpts);
+      if (ext.strategy === "BODY") strategy = "BODY";
+      for (const b of ext.blocks) {
+        allBlocks.push({ ...b, idx: allBlocks.length });
+      }
+    }
+
     if (crawlResult.pages.length === 0) {
       plog.warn({ url: site.url }, "crawl returned 0 pages — falling back to single-page fetch");
       let fetchResult;
@@ -96,6 +126,7 @@ export async function runPoll(siteId: string): Promise<PollResult> {
         plog.error({ err, url: site.url }, "single-page fallback also failed");
         return { status: "fetch_failed", error: String(err) };
       }
+      pushPageBlocks(fetchResult.html, null);
       cleanText = extractContent(fetchResult.html, site.contentSelector, site.stripPatterns);
       pagesCrawled = 1;
       httpStatus = fetchResult.status;
@@ -108,7 +139,13 @@ export async function runPoll(siteId: string): Promise<PollResult> {
         pages: [{ url: site.url, path: new URL(site.url).pathname, depth: 0, status: httpStatus, chars: cleanText.length }],
       });
     } else {
+      // Pages are processed in URL-sorted order so a stable page order is
+      // produced regardless of crawl-time discovery order.
+      const sortedPages = crawlResult.pages.slice().sort((a, b) => a.url.localeCompare(b.url));
       const rootPage = crawlResult.pages.find((p) => p.depth === 0) ?? crawlResult.pages[0];
+      for (const p of sortedPages) {
+        pushPageBlocks(p.html, `${p.path}${p.title ? ` | ${p.title}` : ""}`);
+      }
       cleanText = aggregatePages(crawlResult.pages);
       pagesCrawled = crawlResult.pages.length;
       httpStatus = rootPage.status;
@@ -128,25 +165,49 @@ export async function runPoll(siteId: string): Promise<PollResult> {
     }
 
     const newHash = sha256(cleanText);
+    const newBlocksHash = computeBlocksHash(allBlocks);
 
     // ── Dedup short-circuit ──────────────────────────────────────────────────
-    // If the freshly-extracted content hashes the same as the last stored
-    // snapshot, write nothing new — just acknowledge the poll. This kills
-    // ~90% of DB churn and LLM cost on stable sites.
+    // Prefer the new block-level hash if both the previous snapshot and the
+    // current poll have one; fall back to the legacy text hash for older rows.
     const prevSnapshot = await db.snapshot.findFirst({
       where: { siteId },
       orderBy: { fetchedAt: "desc" },
     });
 
-    if (prevSnapshot && prevSnapshot.contentHash === newHash) {
-      plog.debug({ hash: newHash, pagesCrawled }, "content unchanged — skipping snapshot write");
+    const dedupByBlocks =
+      !!prevSnapshot?.blocksHash && prevSnapshot.blocksHash === newBlocksHash;
+    const dedupByText =
+      !prevSnapshot?.blocksHash && !!prevSnapshot && prevSnapshot.contentHash === newHash;
+
+    if (prevSnapshot && (dedupByBlocks || dedupByText)) {
+      plog.debug(
+        { hash: newHash, blocksHash: newBlocksHash, pagesCrawled, dedupByBlocks },
+        "content unchanged — skipping snapshot write"
+      );
       return { status: "unchanged", pagesCrawled };
     }
 
     const htmlGz = new Uint8Array(gzip(manifest));
     const textGz = new Uint8Array(gzip(cleanText));
     const newSnapshot = await db.snapshot.create({
-      data: { siteId, contentHash: newHash, htmlGz, textGz, httpStatus },
+      data: {
+        siteId,
+        contentHash: newHash,
+        blocksHash: newBlocksHash,
+        extractStrategy: strategy,
+        htmlGz,
+        textGz,
+        httpStatus,
+        blocks: {
+          create: allBlocks.map((b) => ({
+            idx: b.idx,
+            blockHash: b.blockHash,
+            text: b.text,
+            kind: b.kind,
+          })),
+        },
+      },
     });
 
     if (!prevSnapshot) {
@@ -154,11 +215,44 @@ export async function runPoll(siteId: string): Promise<PollResult> {
     }
 
     // ── Diff ─────────────────────────────────────────────────────────────────
-    const prevText = prevSnapshot.textGz
-      ? gunzipSync(Buffer.from(prevSnapshot.textGz)).toString("utf8")
-      : "";
+    // Prefer block-level diff when both sides have stored blocks. Falls back
+    // to the legacy text diff when the previous snapshot pre-dates Phase 2a.
+    let diffResult: { unified: string; isSignificant: boolean; addedLines: string[]; removedLines: string[] };
+    if (prevSnapshot.blocksHash) {
+      const prevBlocks = await db.snapshotBlock.findMany({
+        where: { snapshotId: prevSnapshot.id },
+        select: { blockHash: true, text: true, kind: true, idx: true },
+        orderBy: { idx: "asc" },
+      });
+      const blockDiff = computeBlockDiff(prevBlocks, allBlocks, { minDiffChars: site.minDiffChars });
+      diffResult = {
+        unified: blockDiff.unified,
+        isSignificant: blockDiff.isSignificant,
+        addedLines: blockDiff.added.map((b) => b.text).concat(blockDiff.edited.map((p) => p.after.text)),
+        removedLines: blockDiff.removed.map((b) => b.text).concat(blockDiff.edited.map((p) => p.before.text)),
+      };
+      plog.debug(
+        {
+          added: blockDiff.added.length,
+          removed: blockDiff.removed.length,
+          edited: blockDiff.edited.length,
+          changedChars: blockDiff.changedChars,
+        },
+        "block-level diff computed"
+      );
+    } else {
+      const prevText = prevSnapshot.textGz
+        ? gunzipSync(Buffer.from(prevSnapshot.textGz)).toString("utf8")
+        : "";
+      const textDiff = computeDiff(prevText, cleanText, { minDiffChars: site.minDiffChars });
+      diffResult = {
+        unified: textDiff.unified,
+        isSignificant: textDiff.isSignificant,
+        addedLines: textDiff.addedLines,
+        removedLines: textDiff.removedLines,
+      };
+    }
 
-    const diffResult = computeDiff(prevText, cleanText, { minDiffChars: site.minDiffChars });
     if (!diffResult.isSignificant) return { status: "insignificant_diff" };
 
     // ── Stability check ──────────────────────────────────────────────────────

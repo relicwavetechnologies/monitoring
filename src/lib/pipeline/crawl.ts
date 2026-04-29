@@ -29,6 +29,9 @@ export interface CrawledPage {
   path: string;
   title: string;
   text: string;
+  /** Raw HTML kept in-memory for the duration of the poll; not persisted.
+   *  Phase 2a uses this to do block-level extraction across all crawled pages. */
+  html: string;
   depth: number;
   status: number;
 }
@@ -159,7 +162,7 @@ export async function crawlSite(rootUrl: string, opts: CrawlOptions = {}): Promi
     const text = extractContent(html, contentSelector, stripPatterns);
     const path = new URL(url).pathname;
 
-    pages.push({ url, path, title, text, depth, status });
+    pages.push({ url, path, title, text, html, depth, status });
 
     // Don't follow links from pages at max depth
     if (depth >= maxDepth) continue;

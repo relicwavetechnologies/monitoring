@@ -109,13 +109,45 @@ model Snapshot {
   id          String   @id @default(cuid())
   siteId      String
   contentHash String
+  // Phase 2a: reorder-resilient hash over the *set* of block hashes.
+  // Nullable so legacy rows (created pre-Phase-2a) stay valid; the runtime
+  // falls back to contentHash for those.
+  blocksHash      String?
+  // Which extraction strategy produced the blocks for this snapshot.
+  // Valid values: SELECTOR, READABILITY, BODY. Stored as String so we
+  // can add new tiers without an enum migration each time.
+  extractStrategy String   @default("SELECTOR")
   htmlGz      Bytes
   textGz      Bytes
   fetchedAt   DateTime @default(now())
   httpStatus  Int      @default(200)
   site        Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  blocks      SnapshotBlock[]
 
   @@index([siteId, fetchedAt(sort: Desc)])
+  @@index([siteId, blocksHash])
+}
+
+/// One block of extracted content from a snapshot — typically a paragraph,
+/// heading, list item, or table cell. Block-level storage lets the diff
+/// engine treat a reordered page as unchanged while still spotting edits.
+model SnapshotBlock {
+  id         String   @id @default(cuid())
+  snapshotId String
+  /// Position in document order — used for human-readable display.
+  idx        Int
+  /// SHA-256 of `kind + ':' + normalised(text)`. Identical text in the
+  /// same kind always produces the same hash, so set operations are exact.
+  blockHash  String
+  /// The block's text content, post strip-pattern, post-normalisation.
+  text       String   @db.Text
+  /// HTML element kind: h1, h2, h3, h4, h5, h6, p, li, td, pre, blockquote,
+  /// dt, dd. Lowercased.
+  kind       String
+  snapshot   Snapshot @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
+
+  @@index([snapshotId, idx])
+  @@index([snapshotId, blockHash])
 }
 
 model Change {
