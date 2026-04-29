@@ -2,6 +2,7 @@ import { sendChangeAlert } from "@/lib/resend";
 import { db } from "@/lib/db";
 import { getLogger } from "@/lib/logger";
 import { decideEmailNextState } from "@/lib/pipeline/email-state";
+import { enqueueEmailSend } from "@/lib/queue";
 
 const log = getLogger("pipeline.notify");
 
@@ -48,7 +49,16 @@ export async function maybeNotify(changeId: string): Promise<void> {
     return;
   }
 
-  await sendOnce(changeId);
+  // Phase 5: decouple the actual send from the poll path. Enqueue an
+  // email.send job; the queue handler runs sendOnce with retries +
+  // backoff. If the queue is unreachable we fall back to a synchronous
+  // send so a Phase 5 outage doesn't drop the alert.
+  try {
+    await enqueueEmailSend({ changeId, isRetry: false });
+  } catch (err) {
+    log.warn({ err, changeId }, "queue unavailable — sending email synchronously");
+    await sendOnce(changeId);
+  }
 }
 
 /**

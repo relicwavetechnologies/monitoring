@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getLogger } from "@/lib/logger";
 import { isMonitoredUrlDue } from "@/lib/pipeline/tick-logic";
+import { enqueueUrlPoll } from "@/lib/queue";
 
 const log = getLogger("api.cron.tick");
 
@@ -11,10 +12,13 @@ function verifyCron(req: NextRequest) {
 }
 
 /**
- * Phase 2b: tick now iterates MonitoredUrls, not Sites. The cadence still
- * comes from `Site.pollIntervalMin` (URLs on the same site share a cadence;
- * per-URL cadence override can come in a later phase). A URL is "due" if
- * its own `lastCheckedAt` is older than that interval.
+ * Phase 5: tick now ENQUEUES url.poll jobs onto pg-boss instead of
+ * fanning out HTTP requests in-process. The queue handler picks them
+ * up, retries on failure, and enforces per-URL singleton concurrency.
+ *
+ * This route stays in place as a manual trigger for debugging; the
+ * primary scheduler is pg-boss's own internal cron (every 5 minutes,
+ * registered in queue/setup.ts).
  */
 export async function GET(req: NextRequest) {
   if (!verifyCron(req)) {
@@ -22,7 +26,7 @@ export async function GET(req: NextRequest) {
   }
 
   const now = new Date();
-  const safetyCutoff = new Date(now.getTime() - 1 * 60 * 1000);
+  const safetyCutoff = new Date(now.getTime() - 60_000);
 
   const candidates = await db.monitoredUrl.findMany({
     where: {
@@ -45,22 +49,21 @@ export async function GET(req: NextRequest) {
     })
   );
 
-  const baseUrl = req.nextUrl.origin;
-  const settled = await Promise.allSettled(
-    due.map((u) =>
-      fetch(`${baseUrl}/api/cron/poll/${u.id}`, {
-        method: "GET",
-        headers: { authorization: `Bearer ${process.env.CRON_SECRET}` },
-      })
-    )
-  );
+  let enqueued = 0;
+  for (const u of due) {
+    try {
+      await enqueueUrlPoll({ monitoredUrlId: u.id, enqueuedAt: now.toISOString() });
+      enqueued++;
+    } catch (err) {
+      log.error({ err, monitoredUrlId: u.id }, "failed to enqueue url.poll");
+    }
+  }
 
-  const failures = settled.filter((s) => s.status === "rejected").length;
-  log.info({ triggered: due.length, failures }, "tick fan-out complete");
+  log.info({ candidates: candidates.length, due: due.length, enqueued }, "tick fan-out complete");
 
   return NextResponse.json({
-    triggered: due.length,
-    failures,
-    monitoredUrlIds: due.map((u) => u.id),
+    candidates: candidates.length,
+    due: due.length,
+    enqueued,
   });
 }
