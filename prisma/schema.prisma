@@ -72,23 +72,37 @@ enum ChangeCategory {
   UNKNOWN
 }
 
+enum EmailStatus {
+  PENDING
+  SENT
+  FAILED
+  SKIPPED
+}
+
 model Site {
-  id              String     @id @default(cuid())
-  name            String
-  url             String
-  renderMode      RenderMode @default(STATIC)
-  contentSelector String     @default("body")
-  stripPatterns   String[]   @default([])
-  pollIntervalMin Int        @default(60)
-  isActive        Boolean    @default(true)
-  lastCheckedAt   DateTime?
-  pendingDiff     Json?
-  aiAnalysis      String?    @db.Text
-  aiAnalysisAt    DateTime?
-  createdAt       DateTime   @default(now())
-  updatedAt       DateTime   @updatedAt
-  snapshots       Snapshot[]
-  changes         Change[]
+  id                  String     @id @default(cuid())
+  name                String
+  url                 String
+  renderMode          RenderMode @default(STATIC)
+  contentSelector     String     @default("body")
+  stripPatterns       String[]   @default([])
+  pollIntervalMin     Int        @default(60)
+  isActive            Boolean    @default(true)
+  // Per-site tunables (Phase 1)
+  minDiffChars        Int        @default(40)
+  severityThreshold   Int        @default(3)
+  confidenceThreshold Float      @default(0.7)
+  confirmAfterHours   Int        @default(24)
+  maxCrawlDepth       Int        @default(2)
+  maxCrawlPages       Int        @default(20)
+  lastCheckedAt       DateTime?
+  pendingDiff         Json?
+  aiAnalysis          String?    @db.Text
+  aiAnalysisAt        DateTime?
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
+  snapshots           Snapshot[]
+  changes             Change[]
 }
 
 model Snapshot {
@@ -105,22 +119,35 @@ model Snapshot {
 }
 
 model Change {
-  id             String         @id @default(cuid())
-  siteId         String
-  fromSnapshotId String?
-  toSnapshotId   String
-  category       ChangeCategory @default(UNKNOWN)
-  severity       Int
-  confidence     Float
-  summary        String
-  detail         String?        @db.Text
-  diffText       String         @db.Text
-  emailSent      Boolean        @default(false)
-  detectedAt     DateTime       @default(now())
-  site           Site           @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  id                 String         @id @default(cuid())
+  siteId             String
+  fromSnapshotId     String?
+  toSnapshotId       String
+  // Content-hash idempotency (Phase 1): re-running a poll over the same hash
+  // transition is rejected by the unique constraint below.
+  fromContentHash    String?
+  toContentHash      String
+  category           ChangeCategory @default(UNKNOWN)
+  severity           Int
+  confidence         Float
+  summary            String
+  detail             String?        @db.Text
+  diffText           String         @db.Text
+  // Email delivery state (Phase 1): replaces the old emailSent boolean.
+  emailStatus        EmailStatus    @default(PENDING)
+  emailAttempts      Int            @default(0)
+  lastEmailError     String?        @db.Text
+  lastEmailAttemptAt DateTime?
+  detectedAt         DateTime       @default(now())
+  site               Site           @relation(fields: [siteId], references: [id], onDelete: Cascade)
 
+  // NB: the actual DB index also uses NULLS NOT DISTINCT (see migration 0001).
+  // Prisma 7's prisma-client generator does not yet expose nullsNotDistinct,
+  // so the schema declares the columns and the migration owns the SQL nuance.
+  @@unique([siteId, fromContentHash, toContentHash], map: "Change_siteId_fromContentHash_toContentHash_key")
   @@index([siteId, detectedAt(sort: Desc)])
   @@index([severity, detectedAt(sort: Desc)])
+  @@index([emailStatus, lastEmailAttemptAt])
 }
 
 model SerperHit {

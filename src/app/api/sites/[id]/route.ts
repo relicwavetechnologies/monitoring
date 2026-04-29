@@ -11,6 +11,15 @@ const UpdateSiteSchema = z.object({
   stripPatterns: z.array(z.string()).optional(),
   pollIntervalMin: z.number().int().min(15).max(1440).optional(),
   isActive: z.boolean().optional(),
+  // Per-site tunables introduced in Phase 1 — clients can adjust these
+  // without a redeploy. The bounds are intentionally permissive; bad values
+  // degrade noisily rather than break the pipeline.
+  minDiffChars: z.number().int().min(0).max(100_000).optional(),
+  severityThreshold: z.number().int().min(1).max(5).optional(),
+  confidenceThreshold: z.number().min(0).max(1).optional(),
+  confirmAfterHours: z.number().int().min(0).max(720).optional(),
+  maxCrawlDepth: z.number().int().min(0).max(5).optional(),
+  maxCrawlPages: z.number().int().min(1).max(200).optional(),
 });
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {

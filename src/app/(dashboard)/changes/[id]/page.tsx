@@ -57,10 +57,16 @@ export default async function ChangePage({ params }: { params: Promise<{ id: str
           <Badge variant="outline" className="text-[11px] border-border/50 bg-muted/30">
             {CATEGORY_LABELS[change.category]}
           </Badge>
-          {change.emailSent && (
+          {change.emailStatus === "SENT" && (
             <Badge variant="outline" className="text-[11px] bg-blue-50 text-blue-700 border-blue-200">
               <Mail className="h-3 w-3 mr-1" />
               Alert Sent
+            </Badge>
+          )}
+          {change.emailStatus === "FAILED" && (
+            <Badge variant="outline" className="text-[11px] bg-red-50 text-red-700 border-red-200">
+              <Mail className="h-3 w-3 mr-1" />
+              Alert Failed (retrying)
             </Badge>
           )}
           <span className="text-xs text-muted-foreground ml-auto">

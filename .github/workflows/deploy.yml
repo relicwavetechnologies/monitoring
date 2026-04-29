@@ -63,10 +63,16 @@ jobs:
       - name: Install deps (for prisma config)
         run: pnpm install --frozen-lockfile --ignore-scripts
 
-      - name: Push schema to database
+      # Phase 1: switched from `prisma db push` to `prisma migrate deploy`.
+      # Before the very first migration-aware deploy, run ONCE against prod:
+      #   pnpm exec prisma migrate resolve --applied 0000_baseline
+      # This marks the existing schema (originally created via `db push`) as
+      # equivalent to the baseline migration so subsequent migrations layer
+      # on cleanly. See README "Database migrations" section.
+      - name: Apply migrations
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-        run: pnpm exec prisma db push --schema prisma/schema.prisma
+        run: pnpm exec prisma migrate deploy --schema prisma/schema.prisma
 
       - name: Deploy over SSH
         uses: appleboy/ssh-action@v1

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { formatDistanceToNow } from "@/lib/time";
 import { ExternalLink } from "lucide-react";
-import { ChangeCategory } from "@/generated/prisma/enums";
+import { ChangeCategory, EmailStatus } from "@/generated/prisma/enums";
 
 interface ChangeCardProps {
   change: {
@@ -12,7 +12,7 @@ interface ChangeCardProps {
     category: ChangeCategory;
     confidence: number;
     detectedAt: Date;
-    emailSent: boolean;
+    emailStatus: EmailStatus;
     site: { id: string; name: string; url: string };
   };
   showSite?: boolean;

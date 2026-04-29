@@ -7,6 +7,10 @@
     {
       "path": "/api/cron/serper",
       "schedule": "0 8 * * *"
+    },
+    {
+      "path": "/api/cron/email-sweep",
+      "schedule": "*/15 * * * *"
     }
   ]
 }

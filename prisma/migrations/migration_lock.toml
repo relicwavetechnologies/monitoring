@@ -1,0 +1,4 @@
+# Prisma Migrations lockfile
+# This file is created by Prisma and should not be edited manually.
+# It identifies the database provider so migrations can be applied consistently.
+provider = "postgresql"

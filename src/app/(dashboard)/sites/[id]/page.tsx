@@ -44,7 +44,7 @@ export default async function SiteDetailPage({ params }: { params: Promise<{ id:
           category: true,
           confidence: true,
           detectedAt: true,
-          emailSent: true,
+          emailStatus: true,
           siteId: true,
         },
       },

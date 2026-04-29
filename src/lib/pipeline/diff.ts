@@ -9,9 +9,24 @@ export interface DiffResult {
   isSignificant: boolean;
 }
 
-const MIN_DIFF_CHARS = 40;
+export interface DiffOptions {
+  /** Absolute character floor below which a diff is treated as noise. */
+  minDiffChars?: number;
+  /** Percentage-of-document floor (0..1) above which a diff is significant regardless of size. */
+  minPctChange?: number;
+}
 
-export function computeDiff(oldText: string, newText: string): DiffResult {
+const DEFAULT_MIN_DIFF_CHARS = 40;
+const DEFAULT_MIN_PCT_CHANGE = 0.01;
+
+export function computeDiff(
+  oldText: string,
+  newText: string,
+  options: DiffOptions = {}
+): DiffResult {
+  const minDiffChars = options.minDiffChars ?? DEFAULT_MIN_DIFF_CHARS;
+  const minPctChange = options.minPctChange ?? DEFAULT_MIN_PCT_CHANGE;
+
   const changes: Change[] = diffLines(oldText, newText, { ignoreWhitespace: false });
 
   const lines: string[] = [];
@@ -49,7 +64,7 @@ export function computeDiff(oldText: string, newText: string): DiffResult {
 
   const totalContent = Math.max(oldText.length, newText.length, 1);
   const pctChange = (addedChars + removedChars) / totalContent;
-  const isSignificant = addedChars + removedChars >= MIN_DIFF_CHARS || pctChange >= 0.01;
+  const isSignificant = addedChars + removedChars >= minDiffChars || pctChange >= minPctChange;
 
   return {
     unified: lines.join("\n"),
