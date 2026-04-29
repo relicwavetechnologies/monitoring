@@ -97,11 +97,13 @@ jobs:
               pnpm exec prisma migrate resolve --applied 0000_baseline --schema prisma/schema.prisma
               continue
             fi
-            if grep -q 'P3018' "$out"; then
-              # Extract: "Migration name: 0002_phase2a_block_diff"
-              failed=$(grep -oE 'Migration name: [0-9_a-zA-Z]+' "$out" | head -n1 | awk '{print $3}')
+            if grep -qE 'P3018|P3009' "$out"; then
+              # Match our migration-name convention regardless of the prisma
+              # error format: P3018 says "Migration name: 0002_foo", P3009
+              # says "The `0002_foo` migration ... failed".
+              failed=$(grep -oE '[0-9]{4}_[a-z0-9_]+' "$out" | head -n1)
               if [ -n "$failed" ]; then
-                echo "::warning::P3018 — rolling back $failed and retrying."
+                echo "::warning::P3009/P3018 — rolling back $failed and retrying."
                 pnpm exec prisma migrate resolve --rolled-back "$failed" --schema prisma/schema.prisma
                 continue
               fi
