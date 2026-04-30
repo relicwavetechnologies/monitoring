@@ -1,6 +1,5 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { Sidebar } from "@/components/dashboard/sidebar";
 import { Topbar } from "@/components/dashboard/topbar";
 import { AuthSessionProvider } from "@/components/dashboard/session-provider";
 
@@ -10,12 +9,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   return (
     <AuthSessionProvider>
-      <div className="flex h-screen overflow-hidden" style={{ background: "var(--background)" }}>
-        <Sidebar />
-        <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
-          <Topbar />
-          <main className="flex-1 overflow-y-auto px-6 py-8 md:px-10 md:py-10">{children}</main>
-        </div>
+      <div style={{ background: "var(--background)", minHeight: "100vh" }}>
+        <Topbar />
+        <main className="px-6 md:px-10 py-9 md:py-12">{children}</main>
       </div>
     </AuthSessionProvider>
   );
