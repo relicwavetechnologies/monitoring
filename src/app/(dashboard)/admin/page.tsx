@@ -22,7 +22,9 @@ export default async function AdminPage() {
       db.change.count(),
       db.change.groupBy({ by: ["severity"], _count: { id: true } }),
       db.change.aggregate({
-        where: { detectedAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) } },
+        where: {
+          detectedAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
+        },
         _sum: {
           classifierCostUsd: true,
           classifierTokensIn: true,
@@ -37,6 +39,7 @@ export default async function AdminPage() {
           id: true,
           summary: true,
           severity: true,
+          category: true,
           classifierStatus: true,
           classifierModel: true,
           classifierCostUsd: true,
@@ -51,102 +54,141 @@ export default async function AdminPage() {
   const tokensOut7d = costSum._sum.classifierTokensOut ?? 0;
   const sevByLevel = Object.fromEntries(sevDist.map((d) => [d.severity, d._count.id]));
 
-  const dbStats = [
-    { label: "Active sites", value: siteCount.toLocaleString() },
-    { label: "Active URLs", value: urlCount.toLocaleString() },
-    { label: "Snapshots", value: snapCount.toLocaleString() },
-    { label: "Changes", value: changeCount.toLocaleString() },
-  ];
+  const STAT_LABEL = "text-caption-2";
 
-  const cost7dStats = [
-    { label: "Changes", value: costSum._count.id.toLocaleString() },
-    { label: "LLM cost", value: `$${cost7d.toFixed(4)}` },
-    { label: "Tokens in", value: tokensIn7d.toLocaleString() },
-    { label: "Tokens out", value: tokensOut7d.toLocaleString() },
-  ];
+  function statCard(label: string, value: string | number, idx: number) {
+    return (
+      <div
+        key={label}
+        className={`surface-flat animate-fade-up stagger-${(idx % 4) + 1}`}
+        style={{ padding: "16px 18px" }}
+      >
+        <div className={STAT_LABEL} style={{ color: "var(--foreground-3)" }}>
+          {label.toUpperCase()}
+        </div>
+        <div
+          className="tabular mt-2"
+          style={{
+            fontSize: 22,
+            fontWeight: 600,
+            letterSpacing: "-0.022em",
+            color: "var(--foreground)",
+            lineHeight: 1.1,
+          }}
+        >
+          {value}
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="max-w-5xl mx-auto pb-12 animate-fade-up">
-      <div className="mb-8">
+    <div className="max-w-5xl mx-auto pb-12">
+      {/* Hero */}
+      <div className="mb-10 animate-fade-up">
         <span className="eyebrow inline-block mb-3">Operations</span>
         <h1 className="hero-title">Admin</h1>
-        <p className="hero-sub mt-3 max-w-2xl">
-          Operational overview. For raw counters, see{" "}
-          <code
-            className="mono"
-            style={{
-              background: "var(--background-2)",
-              padding: "1px 7px",
-              borderRadius: 6,
-              fontSize: 13,
-            }}
-          >
-            /api/admin/metrics
-          </code>
-          .
+        <p className="hero-sub mt-2">
+          Operational pulse — queue, costs, classifier health.{" "}
+          <span style={{ color: "var(--foreground-4)" }}>
+            Raw counters at <code className="mono" style={{ fontSize: 13 }}>/api/admin/metrics</code>.
+          </span>
         </p>
       </div>
 
-      <Section label="Database">
-        <Stats items={dbStats} />
-      </Section>
+      {/* DB rollups */}
+      <div className="mb-8">
+        <h2 className="eyebrow mb-3">Database</h2>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {[
+            ["Active sites", siteCount.toLocaleString()],
+            ["Active URLs", urlCount.toLocaleString()],
+            ["Snapshots", snapCount.toLocaleString()],
+            ["Changes", changeCount.toLocaleString()],
+          ].map(([l, v], i) => statCard(String(l), String(v), i))}
+        </div>
+      </div>
 
-      <Section label="Queue depth">
-        {Object.keys(depth).length === 0 ? (
-          <div
-            className="surface-flat py-6 px-4 text-center"
-            style={{ color: "var(--foreground-3)", fontSize: 13 }}
-          >
-            Queue is unreachable or not started yet.
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {Object.entries(depth).map(([name, n]) => (
-              <div key={name} className="surface-flat p-4">
-                <div
-                  className="mono"
-                  style={{
-                    fontSize: 11,
-                    color: "var(--foreground-3)",
-                    letterSpacing: "-0.005em",
-                  }}
-                >
-                  {name}
-                </div>
-                <div
-                  className="tabular mt-1"
-                  style={{
-                    fontSize: 22,
-                    fontWeight: 600,
-                    color: "var(--foreground)",
-                    letterSpacing: "-0.022em",
-                    lineHeight: 1.1,
-                  }}
-                >
-                  {n < 0 ? "—" : n}
-                </div>
+      {/* Queue */}
+      <div className="mb-8">
+        <h2 className="eyebrow mb-3">Queue depth</h2>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {Object.keys(depth).length === 0 && (
+            <div
+              className="col-span-full surface-flat text-footnote"
+              style={{ padding: 14, color: "var(--foreground-3)" }}
+            >
+              Queue is unreachable or not started yet (DATABASE_URL may be missing).
+            </div>
+          )}
+          {Object.entries(depth).map(([name, n], i) => (
+            <div
+              key={name}
+              className={`surface-flat animate-fade-up stagger-${(i % 4) + 1}`}
+              style={{ padding: "14px 16px" }}
+            >
+              <div className="mono text-footnote" style={{ color: "var(--foreground-3)" }}>
+                {name}
               </div>
-            ))}
-          </div>
-        )}
-      </Section>
-
-      <Section label="Last 7 days · LLM cost">
-        <Stats items={cost7dStats} />
-      </Section>
-
-      <Section label="Severity distribution (all-time)">
-        <div className="grid grid-cols-5 gap-3">
-          {[1, 2, 3, 4, 5].map((sev) => (
-            <div key={sev} className="surface-flat p-3 text-center">
-              <span className={`sev-pill sev-${sev}`}>sev {sev}</span>
               <div
-                className="tabular mt-2"
+                className="tabular mt-1.5"
                 style={{
-                  fontSize: 18,
+                  fontSize: 20,
                   fontWeight: 600,
                   color: "var(--foreground)",
                   letterSpacing: "-0.022em",
+                  lineHeight: 1.1,
+                }}
+              >
+                {n < 0 ? "—" : n}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Last 7 days */}
+      <div className="mb-8">
+        <h2 className="eyebrow mb-3">Last 7 days</h2>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {[
+            ["Changes", costSum._count.id.toLocaleString()],
+            ["LLM cost", `$${cost7d.toFixed(4)}`],
+            ["Tokens in", tokensIn7d.toLocaleString()],
+            ["Tokens out", tokensOut7d.toLocaleString()],
+          ].map(([l, v], i) => statCard(String(l), String(v), i))}
+        </div>
+      </div>
+
+      {/* Severity distribution */}
+      <div className="mb-8">
+        <h2 className="eyebrow mb-3">Severity distribution · all-time</h2>
+        <div className="grid grid-cols-5 gap-3">
+          {[1, 2, 3, 4, 5].map((sev) => (
+            <div
+              key={sev}
+              className="surface-flat text-center"
+              style={{ padding: "14px 10px" }}
+            >
+              <div
+                className="text-caption-2"
+                style={{ color: "var(--foreground-3)" }}
+              >
+                SEV {sev}
+              </div>
+              <div
+                className="tabular mt-1.5"
+                style={{
+                  fontSize: 22,
+                  fontWeight: 600,
+                  color:
+                    sev >= 4
+                      ? "var(--red-ink)"
+                      : sev >= 3
+                      ? "var(--orange-ink)"
+                      : "var(--foreground)",
+                  letterSpacing: "-0.022em",
+                  lineHeight: 1,
                 }}
               >
                 {sevByLevel[sev] ?? 0}
@@ -154,13 +196,19 @@ export default async function AdminPage() {
             </div>
           ))}
         </div>
-      </Section>
+      </div>
 
-      <Section label="Recent changes">
+      {/* Recent changes */}
+      <div>
+        <h2 className="eyebrow mb-3">Recent changes</h2>
         {recentChanges.length === 0 ? (
           <div
-            className="surface-flat py-6 text-center"
-            style={{ color: "var(--foreground-3)", fontSize: 13 }}
+            className="surface-flat text-center text-subhead"
+            style={{
+              padding: "32px 20px",
+              color: "var(--foreground-3)",
+              borderStyle: "dashed",
+            }}
           >
             No changes yet.
           </div>
@@ -169,31 +217,45 @@ export default async function AdminPage() {
             {recentChanges.map((c, i) => (
               <div
                 key={c.id}
-                className="row-hover flex items-center gap-3 px-4 py-3 flex-wrap"
+                className="flex items-center gap-3 px-5 py-3 row-hover"
                 style={{
                   borderBottom:
                     i === recentChanges.length - 1 ? "none" : "1px solid var(--border)",
-                  fontSize: 12.5,
                 }}
               >
-                <span className={`sev-pill sev-${Math.max(1, Math.min(5, c.severity))}`}>
+                <span className={`sev-pill sev-${c.severity}`}>
                   sev {c.severity}
                 </span>
-                <span className="pill pill-muted">{c.classifierStatus}</span>
                 <span
-                  className="mono"
-                  style={{ color: "var(--foreground-3)", letterSpacing: "-0.005em" }}
+                  className={`pill pill-${
+                    c.classifierStatus === "VALIDATED"
+                      ? "green"
+                      : c.classifierStatus === "CLAMPED"
+                      ? "indigo"
+                      : c.classifierStatus === "UNGROUNDED"
+                      ? "orange"
+                      : "muted"
+                  }`}
+                >
+                  {c.classifierStatus}
+                </span>
+                <span
+                  className="text-footnote mono shrink-0 truncate max-w-[140px]"
+                  style={{ color: "var(--foreground-3)" }}
                 >
                   {c.site.name}
                 </span>
                 <span
-                  className="flex-1 truncate"
-                  style={{ color: "var(--foreground)", letterSpacing: "-0.005em" }}
+                  className="flex-1 truncate text-subhead"
+                  style={{ color: "var(--foreground)" }}
                 >
                   {c.summary}
                 </span>
                 {c.classifierCostUsd != null && (
-                  <span className="mono tabular" style={{ color: "var(--foreground-3)" }}>
+                  <span
+                    className="mono shrink-0 tabular text-footnote"
+                    style={{ color: "var(--foreground-4)" }}
+                  >
                     ${c.classifierCostUsd.toFixed(5)}
                   </span>
                 )}
@@ -201,60 +263,7 @@ export default async function AdminPage() {
             ))}
           </div>
         )}
-      </Section>
-    </div>
-  );
-}
-
-function Section({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <section className="mb-8">
-      <h2
-        className="mb-3"
-        style={{
-          fontSize: 14,
-          fontWeight: 600,
-          letterSpacing: "-0.014em",
-          color: "var(--foreground-2)",
-        }}
-      >
-        {label}
-      </h2>
-      {children}
-    </section>
-  );
-}
-
-function Stats({ items }: { items: { label: string; value: string }[] }) {
-  return (
-    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-      {items.map((s) => (
-        <div key={s.label} className="surface-flat p-4">
-          <div
-            style={{
-              fontSize: 11,
-              fontWeight: 500,
-              color: "var(--foreground-3)",
-              letterSpacing: "0.04em",
-              textTransform: "uppercase",
-            }}
-          >
-            {s.label}
-          </div>
-          <div
-            className="tabular mt-1.5"
-            style={{
-              fontSize: 22,
-              fontWeight: 600,
-              color: "var(--foreground)",
-              letterSpacing: "-0.022em",
-              lineHeight: 1.1,
-            }}
-          >
-            {s.value}
-          </div>
-        </div>
-      ))}
+      </div>
     </div>
   );
 }

@@ -12,6 +12,7 @@ import { SiteActionButtons } from "@/components/dashboard/site-action-buttons";
 import { AnalyzeButton } from "@/components/dashboard/analyze-button";
 import { MonitoredUrlRow } from "@/components/dashboard/monitored-url-row";
 import { AddUrlForm } from "@/components/dashboard/add-url-form";
+import { EmptyState } from "@/components/dashboard/empty-state";
 import { formatDistanceToNow } from "@/lib/time";
 import {
   ArrowLeft,
@@ -247,14 +248,13 @@ export default async function SiteDetailPage({ params }: { params: Promise<{ id:
       <Separator className="mb-8" />
 
       {/* ── Captured Content ── */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <FileText className="h-4 w-4 text-muted-foreground" />
-            <h2 className="text-sm font-semibold">Captured Content</h2>
-          </div>
+      <div className="mb-10">
+        <div className="flex items-center justify-between mb-3 gap-3">
+          <h2 className="text-headline" style={{ color: "var(--foreground)" }}>
+            Captured content
+          </h2>
           {latestSnapshot?.fetchedAt && (
-            <span className="text-xs text-muted-foreground">
+            <span className="label-mono">
               Snapshot from {formatDistanceToNow(latestSnapshot.fetchedAt)}
             </span>
           )}
@@ -262,38 +262,63 @@ export default async function SiteDetailPage({ params }: { params: Promise<{ id:
 
         {extractedText ? (
           <details className="group">
-            <summary className="flex items-center gap-2 cursor-pointer text-xs text-muted-foreground hover:text-foreground transition-colors list-none px-4 py-3 rounded-lg border border-border/50 bg-muted/20">
-              <span className="font-mono">
+            <summary
+              className="flex items-center gap-2 cursor-pointer list-none surface-flat row-hover"
+              style={{ padding: "12px 16px" }}
+            >
+              <span className="mono text-footnote" style={{ color: "var(--foreground-3)" }}>
                 {extractedText.length.toLocaleString()} characters extracted
               </span>
-              <span className="ml-auto group-open:hidden">Expand ↓</span>
-              <span className="ml-auto hidden group-open:inline">Collapse ↑</span>
+              <span
+                className="ml-auto label-mono group-open:hidden"
+                style={{ color: "var(--foreground-4)" }}
+              >
+                Expand ↓
+              </span>
+              <span
+                className="ml-auto label-mono hidden group-open:inline"
+                style={{ color: "var(--foreground-4)" }}
+              >
+                Collapse ↑
+              </span>
             </summary>
-            <div className="mt-2 rounded-lg border border-border/50 bg-muted/10 overflow-hidden">
-              <pre className="p-4 text-xs font-mono text-muted-foreground whitespace-pre-wrap break-words overflow-y-auto max-h-[400px] leading-relaxed">
+            <div
+              className="mt-2 surface-flat overflow-hidden"
+              style={{ background: "var(--background-2)" }}
+            >
+              <pre
+                className="mono whitespace-pre-wrap break-words overflow-y-auto"
+                style={{
+                  padding: 18,
+                  fontSize: 12.5,
+                  color: "var(--foreground-2)",
+                  lineHeight: 1.65,
+                  maxHeight: 420,
+                  letterSpacing: "-0.005em",
+                }}
+              >
                 {extractedText}
               </pre>
             </div>
           </details>
         ) : (
-          <div className="flex flex-col items-center justify-center py-10 border border-dashed border-border/50 rounded-xl text-center">
-            <FileText className="h-7 w-7 text-muted-foreground mb-2" />
-            <p className="text-sm font-medium">No content captured yet</p>
-            <p className="text-xs text-muted-foreground mt-1">
-              Poll this site to capture its first snapshot.
-            </p>
-          </div>
+          <EmptyState
+            icon={FileText}
+            title="No content captured yet"
+            description="Poll this site to capture its first snapshot."
+          />
         )}
       </div>
 
       {/* ── AI Analysis ── */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-violet-500" />
-            <h2 className="text-sm font-semibold">AI Analysis</h2>
+      <div className="mb-10">
+        <div className="flex items-center justify-between mb-3 gap-3">
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <h2 className="text-headline" style={{ color: "var(--foreground)" }}>
+              AI Analysis
+            </h2>
             {site.aiAnalysisAt && (
-              <span className="text-xs text-muted-foreground">
+              <span className="label-mono">
                 · Last run {formatDistanceToNow(site.aiAnalysisAt)}
               </span>
             )}
@@ -302,31 +327,25 @@ export default async function SiteDetailPage({ params }: { params: Promise<{ id:
         </div>
 
         {analysisHtml ? (
-          <Card className="bg-card border-border/50">
-            <CardContent className="p-5">
-              <div
-                className="analysis-body"
-                dangerouslySetInnerHTML={{ __html: analysisHtml }}
-              />
-            </CardContent>
-          </Card>
+          <div className="surface" style={{ padding: 22 }}>
+            <div
+              className="analysis-body"
+              dangerouslySetInnerHTML={{ __html: analysisHtml }}
+            />
+          </div>
         ) : extractedText ? (
-          <div className="flex flex-col items-center justify-center py-10 border border-dashed border-border/50 rounded-xl text-center">
-            <Sparkles className="h-7 w-7 text-muted-foreground mb-2" />
-            <p className="text-sm font-medium">No analysis yet</p>
-            <p className="text-xs text-muted-foreground mt-1 mb-3">
-              Click &ldquo;Analyze with AI&rdquo; to extract visa-relevant information.
-            </p>
-            <AnalyzeButton siteId={site.id} />
-          </div>
+          <EmptyState
+            icon={Sparkles}
+            title="No analysis yet"
+            description={`Click "Analyze with AI" to extract visa-relevant information.`}
+            action={<AnalyzeButton siteId={site.id} />}
+          />
         ) : (
-          <div className="flex flex-col items-center justify-center py-10 border border-dashed border-border/50 rounded-xl text-center">
-            <Sparkles className="h-7 w-7 text-muted-foreground mb-2" />
-            <p className="text-sm font-medium">Poll the site first</p>
-            <p className="text-xs text-muted-foreground mt-1">
-              Analysis requires a snapshot to be captured.
-            </p>
-          </div>
+          <EmptyState
+            icon={Sparkles}
+            title="Poll the site first"
+            description="Analysis requires a snapshot to be captured."
+          />
         )}
       </div>
 
@@ -335,20 +354,22 @@ export default async function SiteDetailPage({ params }: { params: Promise<{ id:
       {/* Change timeline */}
       <div>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-semibold">Change History</h2>
-          <span className="text-xs text-muted-foreground">{site._count.changes} changes total</span>
+          <h2 className="text-headline" style={{ color: "var(--foreground)" }}>
+            Change history
+          </h2>
+          <span className="pill pill-muted tabular">
+            {site._count.changes}
+          </span>
         </div>
 
         {recentChanges.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center border border-dashed border-border/50 rounded-xl">
-            <CheckCircle2 className="h-8 w-8 text-muted-foreground mb-2" />
-            <p className="text-sm font-medium">No changes detected yet</p>
-            <p className="text-xs text-muted-foreground mt-1">
-              Poll this site to take a baseline snapshot.
-            </p>
-          </div>
+          <EmptyState
+            icon={CheckCircle2}
+            title="No changes detected yet"
+            description="Poll this site to take a baseline snapshot."
+          />
         ) : (
-          <div style={{ border: "1px solid var(--border, #E8E8F2)", borderRadius: 6, overflow: "hidden" }}>
+          <div className="surface-flat overflow-hidden">
             {changesWithSite.map((c) => (
               <ChangeCard key={c.id} change={c} showSite={false} />
             ))}

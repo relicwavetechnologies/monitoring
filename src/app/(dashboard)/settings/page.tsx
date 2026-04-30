@@ -2,8 +2,6 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { SettingsForm } from "@/components/dashboard/settings-form";
 import { DigestButton } from "@/components/dashboard/digest-button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 
 export default async function SettingsPage() {
   const session = await auth();
@@ -13,67 +11,107 @@ export default async function SettingsPage() {
   });
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
-      <div>
-        <h1 className="text-xl font-semibold">Settings</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">
+    <div className="max-w-2xl mx-auto pb-12">
+      <div className="mb-10 animate-fade-up">
+        <span className="eyebrow inline-block mb-3">Account</span>
+        <h1 className="hero-title">Settings</h1>
+        <p className="hero-sub mt-2">
           Manage your profile and alert preferences.
         </p>
       </div>
 
-      <Card className="bg-card border-border/50">
-        <CardHeader>
-          <CardTitle className="text-base">Profile</CardTitle>
-          <CardDescription>Your account information</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-3 gap-4 text-sm">
-            <span className="text-muted-foreground">Email</span>
-            <span className="col-span-2 font-mono text-xs">{user?.email ?? "—"}</span>
-            <span className="text-muted-foreground">Name</span>
-            <span className="col-span-2">{user?.name ?? "—"}</span>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Profile */}
+      <section className="surface mb-5" style={{ padding: 22 }}>
+        <h2
+          className="text-headline mb-1"
+          style={{ color: "var(--foreground)" }}
+        >
+          Profile
+        </h2>
+        <p
+          className="text-footnote mb-4"
+          style={{ color: "var(--foreground-3)" }}
+        >
+          Your account information.
+        </p>
 
-      <Card className="bg-card border-border/50">
-        <CardHeader>
-          <CardTitle className="text-base">Alert Preferences</CardTitle>
-          <CardDescription>
-            Control when and how you receive change notifications
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {user && <SettingsForm userId={user.id} receivesAlerts={user.receivesAlerts} />}
-          <Separator />
+        <dl className="grid grid-cols-[120px_1fr] gap-y-3 gap-x-4 text-subhead">
+          <dt className="eyebrow" style={{ marginTop: 4 }}>Email</dt>
+          <dd className="mono" style={{ color: "var(--foreground)", fontSize: 13 }}>
+            {user?.email ?? "—"}
+          </dd>
+          <dt className="eyebrow" style={{ marginTop: 4 }}>Name</dt>
+          <dd style={{ color: "var(--foreground)" }}>{user?.name ?? "—"}</dd>
+        </dl>
+      </section>
+
+      {/* Alerts */}
+      <section className="surface mb-5" style={{ padding: 22 }}>
+        <h2
+          className="text-headline mb-1"
+          style={{ color: "var(--foreground)" }}
+        >
+          Alert preferences
+        </h2>
+        <p
+          className="text-footnote mb-5"
+          style={{ color: "var(--foreground-3)" }}
+        >
+          Control when and how you receive change notifications. For per-site channels see{" "}
+          <a href="/subscriptions" className="accent-link" style={{ color: "var(--primary)" }}>
+            Subscriptions
+          </a>.
+        </p>
+        {user && (
+          <SettingsForm
+            userId={user.id}
+            receivesAlerts={user.receivesAlerts}
+          />
+        )}
+
+        <div
+          className="mt-5 pt-5"
+          style={{ borderTop: "1px solid var(--border)" }}
+        >
           <DigestButton email={user?.email ?? ""} />
-        </CardContent>
-      </Card>
+        </div>
+      </section>
 
-      <Card className="bg-card border-border/50">
-        <CardHeader>
-          <CardTitle className="text-base">Environment Check</CardTitle>
-          <CardDescription>Required API keys for full functionality</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2 text-sm">
-            {[
-              { label: "OpenAI API Key", key: "OPENAI_API_KEY" },
-              { label: "Resend API Key", key: "RESEND_API_KEY" },
-              { label: "Serper API Key", key: "SERPER_API_KEY" },
-              { label: "Database URL", key: "DATABASE_URL" },
-            ].map(({ label }) => (
-              <div key={label} className="flex items-center justify-between">
-                <span className="text-muted-foreground">{label}</span>
-                <span className="text-xs text-emerald-600 font-medium">Configured</span>
-              </div>
-            ))}
-          </div>
-          <p className="text-xs text-muted-foreground mt-3">
-            Keys are read server-side — not exposed in the browser.
-          </p>
-        </CardContent>
-      </Card>
+      {/* Environment */}
+      <section className="surface" style={{ padding: 22 }}>
+        <h2
+          className="text-headline mb-1"
+          style={{ color: "var(--foreground)" }}
+        >
+          Environment
+        </h2>
+        <p
+          className="text-footnote mb-4"
+          style={{ color: "var(--foreground-3)" }}
+        >
+          Required API keys. Read server-side — never exposed in the browser.
+        </p>
+
+        <div className="space-y-2.5">
+          {[
+            { label: "OpenAI API key" },
+            { label: "Resend API key" },
+            { label: "Serper API key" },
+            { label: "Database URL" },
+          ].map(({ label }) => (
+            <div
+              key={label}
+              className="flex items-center justify-between text-subhead"
+            >
+              <span style={{ color: "var(--foreground-2)" }}>{label}</span>
+              <span className="pill pill-green">
+                <span className="status-dot status-dot-green" />
+                Configured
+              </span>
+            </div>
+          ))}
+        </div>
+      </section>
     </div>
   );
 }

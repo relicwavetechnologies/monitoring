@@ -1,12 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { Trash2, Plus } from "lucide-react";
+import { useState } from "react";
+import { Trash2, Plus, Bell } from "lucide-react";
 import { toast } from "sonner";
+import { EmptyState } from "./empty-state";
 
 type Channel = "EMAIL" | "SLACK" | "WEBHOOK";
 
@@ -30,6 +27,18 @@ interface Props {
   sites: SiteOption[];
 }
 
+const CHANNEL_TONE: Record<Channel, string> = {
+  EMAIL: "pill-blue",
+  SLACK: "pill-indigo",
+  WEBHOOK: "pill-muted",
+};
+
+const CHANNEL_LABEL: Record<Channel, string> = {
+  EMAIL: "Email",
+  SLACK: "Slack",
+  WEBHOOK: "Webhook",
+};
+
 export function SubscriptionsManager({ initial, sites }: Props) {
   const [subs, setSubs] = useState<Subscription[]>(initial);
   const [open, setOpen] = useState(false);
@@ -44,10 +53,6 @@ export function SubscriptionsManager({ initial, sites }: Props) {
     const res = await fetch("/api/subscriptions");
     if (res.ok) setSubs(await res.json());
   };
-
-  useEffect(() => {
-    if (subs !== initial) return;
-  }, [subs, initial]);
 
   const create = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -103,31 +108,55 @@ export function SubscriptionsManager({ initial, sites }: Props) {
     }
   };
 
+  const inputStyle: React.CSSProperties = {
+    background: "var(--background-2)",
+    border: "1px solid var(--border)",
+    borderRadius: "var(--radius-sm)",
+    padding: "8px 12px",
+    fontSize: 14,
+    letterSpacing: "-0.011em",
+    color: "var(--foreground)",
+    width: "100%",
+  };
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <div className="flex justify-between items-center">
-        <p className="text-sm text-muted-foreground">
-          {subs.length} active {subs.length === 1 ? "subscription" : "subscriptions"}
+        <p
+          className="text-subhead"
+          style={{ color: "var(--foreground-3)" }}
+        >
+          {subs.length} active{" "}
+          {subs.length === 1 ? "subscription" : "subscriptions"}
         </p>
         {!open && (
-          <Button size="sm" onClick={() => setOpen(true)} className="gap-1 text-xs h-8">
-            <Plus className="h-3 w-3" />
+          <button onClick={() => setOpen(true)} className="btn-pill">
+            <Plus className="h-3.5 w-3.5" strokeWidth={2.4} />
             New subscription
-          </Button>
+          </button>
         )}
       </div>
 
       {open && (
-        <form onSubmit={create} className="border rounded-md p-4 space-y-3 bg-muted/20">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <Label className="text-xs">Site</Label>
+        <form
+          onSubmit={create}
+          className="surface animate-fade-up"
+          style={{ padding: 20 }}
+        >
+          <h3 className="text-headline mb-4" style={{ color: "var(--foreground)" }}>
+            New subscription
+          </h3>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+            <div className="space-y-1.5">
+              <label className="text-footnote-em" style={{ color: "var(--foreground)" }}>
+                Site
+              </label>
               <select
                 required
                 value={siteId}
                 onChange={(e) => setSiteId(e.target.value)}
-                className="w-full text-sm rounded-md border px-3 py-1.5 bg-background"
-                style={{ borderColor: "var(--border, #E8E8F2)" }}
+                style={inputStyle}
               >
                 <option value="">Pick a site…</option>
                 {sites.map((s) => (
@@ -137,13 +166,14 @@ export function SubscriptionsManager({ initial, sites }: Props) {
                 ))}
               </select>
             </div>
-            <div className="space-y-1">
-              <Label className="text-xs">Channel</Label>
+            <div className="space-y-1.5">
+              <label className="text-footnote-em" style={{ color: "var(--foreground)" }}>
+                Channel
+              </label>
               <select
                 value={channel}
                 onChange={(e) => setChannel(e.target.value as Channel)}
-                className="w-full text-sm rounded-md border px-3 py-1.5 bg-background"
-                style={{ borderColor: "var(--border, #E8E8F2)" }}
+                style={inputStyle}
               >
                 <option value="EMAIL">Email</option>
                 <option value="SLACK">Slack webhook</option>
@@ -153,104 +183,113 @@ export function SubscriptionsManager({ initial, sites }: Props) {
           </div>
 
           {(channel === "SLACK" || channel === "WEBHOOK") && (
-            <div className="space-y-1">
-              <Label className="text-xs">Webhook URL</Label>
-              <Input
+            <div className="space-y-1.5 mb-4">
+              <label className="text-footnote-em" style={{ color: "var(--foreground)" }}>
+                Webhook URL
+              </label>
+              <input
                 type="url"
                 required
                 placeholder="https://hooks.slack.com/services/…"
                 value={webhookUrl}
                 onChange={(e) => setWebhookUrl(e.target.value)}
-                className="text-sm"
+                style={{ ...inputStyle, fontFamily: 'ui-monospace, "SF Mono", monospace', fontSize: 13 }}
               />
             </div>
           )}
 
-          <div className="space-y-1 max-w-[220px]">
-            <Label className="text-xs">Minimum severity (optional)</Label>
-            <Input
+          <div className="space-y-1.5 max-w-[260px] mb-5">
+            <label className="text-footnote-em" style={{ color: "var(--foreground)" }}>
+              Minimum severity
+            </label>
+            <input
               type="number"
               min={1}
               max={5}
               placeholder="leave blank to use site default"
               value={minSeverity}
-              onChange={(e) => setMinSeverity(e.target.value === "" ? "" : Number(e.target.value))}
-              className="text-sm"
+              onChange={(e) =>
+                setMinSeverity(e.target.value === "" ? "" : Number(e.target.value))
+              }
+              style={inputStyle}
             />
           </div>
 
           <div className="flex gap-2">
-            <Button type="submit" size="sm" disabled={submitting} className="text-xs">
-              {submitting ? "Adding…" : "Add"}
-            </Button>
-            <Button
+            <button type="submit" className="btn-pill" disabled={submitting}>
+              {submitting ? "Adding…" : "Add subscription"}
+            </button>
+            <button
               type="button"
-              variant="ghost"
-              size="sm"
+              className="btn-pill-ghost"
               onClick={() => setOpen(false)}
-              className="text-xs"
             >
               Cancel
-            </Button>
+            </button>
           </div>
         </form>
       )}
 
       {subs.length === 0 ? (
-        <div className="border border-dashed rounded-lg p-8 text-center text-sm text-muted-foreground">
-          No subscriptions yet. Add one above to start receiving alerts.
-        </div>
+        <EmptyState
+          icon={Bell}
+          title="No subscriptions yet"
+          description="Add one above to start receiving alerts on email, Slack, or any custom webhook."
+        />
       ) : (
-        <div className="rounded-md overflow-hidden" style={{ border: "1px solid var(--border, #E8E8F2)" }}>
+        <div className="surface-flat overflow-hidden">
           {subs.map((s) => (
             <div
               key={s.id}
-              className="flex items-center gap-3 px-4 py-3 border-b last:border-b-0"
-              style={{ borderColor: "var(--border, #E8E8F2)" }}
+              className="flex items-center gap-3 px-5 py-4"
+              style={{ borderBottom: "1px solid var(--border)" }}
             >
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <Badge variant="outline" className="text-[10px]">
-                    {s.channel}
-                  </Badge>
+                <div className="flex items-center gap-2 flex-wrap mb-1">
+                  <span className={`pill ${CHANNEL_TONE[s.channel]}`}>
+                    {CHANNEL_LABEL[s.channel]}
+                  </span>
                   {s.minSeverity != null && (
-                    <Badge variant="outline" className="text-[10px]">
-                      sev ≥ {s.minSeverity}
-                    </Badge>
+                    <span className="pill pill-muted tabular">
+                      severity ≥ {s.minSeverity}
+                    </span>
                   )}
-                  {s.paused && (
-                    <Badge variant="outline" className="text-[10px] bg-muted/50 text-muted-foreground">
-                      Paused
-                    </Badge>
-                  )}
+                  {s.paused && <span className="pill pill-muted">Paused</span>}
                 </div>
-                <div className="text-xs text-muted-foreground mt-0.5">
-                  Site: <span className="font-mono">{
-                    sites.find((x) => x.id === s.siteId)?.name ?? s.siteId ?? s.monitoredUrlId
-                  }</span>
+                <div className="text-footnote" style={{ color: "var(--foreground-3)" }}>
+                  <span style={{ color: "var(--foreground-2)" }}>
+                    {sites.find((x) => x.id === s.siteId)?.name ??
+                      s.siteId ??
+                      s.monitoredUrlId}
+                  </span>
                   {s.webhookUrl && (
-                    <span className="ml-2">
-                      → <span className="font-mono">{s.webhookUrl.slice(0, 40)}…</span>
+                    <span className="ml-2 mono opacity-80">
+                      → {s.webhookUrl.slice(0, 40)}
+                      {s.webhookUrl.length > 40 ? "…" : ""}
                     </span>
                   )}
                 </div>
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 text-[11px]"
+              <button
+                className="btn-pill-ghost"
                 onClick={() => togglePause(s)}
               >
                 {s.paused ? "Resume" : "Pause"}
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 w-7 p-0 text-red-500 hover:text-red-700"
+              </button>
+              <button
+                className="h-8 w-8 inline-flex items-center justify-center rounded-md transition-colors"
+                style={{ color: "var(--red-ink)" }}
                 onClick={() => remove(s.id)}
+                aria-label="Delete subscription"
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.background = "var(--red-soft)")
+                }
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.background = "transparent")
+                }
               >
-                <Trash2 className="h-3 w-3" />
-              </Button>
+                <Trash2 className="h-3.5 w-3.5" strokeWidth={2} />
+              </button>
             </div>
           ))}
         </div>

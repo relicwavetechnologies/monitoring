@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { ChangeCard } from "@/components/dashboard/change-card";
 import { AiNoticeCards } from "@/components/dashboard/ai-notice-cards";
+import { EmptyState } from "@/components/dashboard/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Suspense } from "react";
 import { CheckCircle2 } from "lucide-react";
@@ -59,33 +60,12 @@ async function RecentChanges() {
 
   if (changes.length === 0) {
     return (
-      <div
-        className="flex flex-col items-center justify-center py-24 text-center surface-flat"
-        style={{ borderStyle: "dashed" }}
-      >
-        <div
-          className="h-12 w-12 rounded-full flex items-center justify-center mb-3"
-          style={{ background: "var(--background-2)" }}
-        >
-          <CheckCircle2
-            className="h-6 w-6"
-            strokeWidth={1.6}
-            style={{ color: "var(--foreground-4)" }}
-          />
-        </div>
-        <p
-          className="text-base font-semibold"
-          style={{ color: "var(--foreground)", letterSpacing: "-0.014em" }}
-        >
-          No changes detected yet
-        </p>
-        <p
-          className="mt-1.5"
-          style={{ color: "var(--foreground-3)", fontSize: 14, letterSpacing: "-0.005em" }}
-        >
-          Add a site and trigger a poll to get started.
-        </p>
-      </div>
+      <EmptyState
+        icon={CheckCircle2}
+        size="spacious"
+        title="No changes detected yet"
+        description="Add a site and trigger a poll to get started."
+      />
     );
   }
 
