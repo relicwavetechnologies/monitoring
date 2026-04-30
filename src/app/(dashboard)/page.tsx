@@ -38,14 +38,18 @@ async function StatsRow() {
         <Link
           key={label}
           href={href}
-          className="stat-col"
+          className="group"
           style={{
             padding: "22px 24px",
             borderRight: i < stats.length - 1 ? "1px solid var(--border)" : "none",
             display: "flex",
             flexDirection: "column",
             gap: 0,
+            transition: "background 120ms ease",
           }}
+          onMouseEnter={(e) => ((e.currentTarget as HTMLAnchorElement).style.background = "var(--background-2)")}
+          onMouseLeave={(e) => ((e.currentTarget as HTMLAnchorElement).style.background = "transparent")}
+
         >
           <span
             style={{ fontSize: 11.5, fontWeight: 500, color: "var(--foreground-4)", letterSpacing: "0.01em", marginBottom: 10 }}
@@ -60,7 +64,7 @@ async function StatsRow() {
           <div className="flex items-center justify-between mt-3">
             <span style={{ fontSize: 12, color: "var(--foreground-4)" }}>{sub}</span>
             <ArrowRight
-              className="stat-col-arrow h-3.5 w-3.5"
+              className="h-3.5 w-3.5 opacity-0 group-hover:opacity-100 transition-opacity"
               strokeWidth={2}
               style={{ color: "var(--foreground-3)" }}
             />
