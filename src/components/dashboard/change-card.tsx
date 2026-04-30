@@ -28,7 +28,14 @@ const CATEGORY_LABELS: Record<ChangeCategory, string> = {
   UNKNOWN:              "Unknown",
 };
 
-/** Severity → pill colour class */
+const SEV_COLOR: Record<number, string> = {
+  1: "transparent",
+  2: "transparent",
+  3: "var(--orange)",
+  4: "var(--red)",
+  5: "var(--red)",
+};
+
 const SEV_PILL: Record<number, string> = {
   1: "pill-muted",
   2: "pill-muted",
@@ -37,53 +44,56 @@ const SEV_PILL: Record<number, string> = {
   5: "pill-red",
 };
 
-/** Left accent stripe colour — only sev 3+ */
-const SEV_STRIPE: Record<number, string> = {
-  1: "transparent",
-  2: "transparent",
-  3: "var(--orange)",
-  4: "var(--red)",
-  5: "var(--red)",
-};
-
 export function ChangeCard({ change, showSite = true }: ChangeCardProps) {
   const sev = Math.max(1, Math.min(5, change.severity));
+  const hasSevColor = sev >= 3;
 
   return (
     <Link
       href={`/changes/${change.id}`}
-      className="group flex card-item gap-0 p-0 overflow-hidden"
-      style={{ display: "flex", marginBottom: 0 }}
+      className="group block"
+      style={{
+        background: "var(--background-1)",
+        border: "1px solid var(--border)",
+        borderRadius: 12,
+        overflow: "hidden",
+        transition: "border-color 120ms ease, box-shadow 120ms ease",
+      }}
+      onMouseEnter={(e) => {
+        const el = e.currentTarget as HTMLAnchorElement;
+        el.style.borderColor = "var(--border-2)";
+        el.style.boxShadow = "0 2px 8px rgba(0,0,0,0.06)";
+      }}
+      onMouseLeave={(e) => {
+        const el = e.currentTarget as HTMLAnchorElement;
+        el.style.borderColor = "var(--border)";
+        el.style.boxShadow = "none";
+      }}
     >
-      {/* Accent stripe — only sev 3+ */}
-      <span
-        aria-hidden
-        className="shrink-0 self-stretch"
-        style={{ width: 3, background: SEV_STRIPE[sev], borderRadius: "14px 0 0 14px" }}
-      />
+      {/* Severity accent bar — only sev 3+ */}
+      {hasSevColor && (
+        <div
+          aria-hidden
+          style={{ height: 3, background: SEV_COLOR[sev] }}
+        />
+      )}
 
-      <div className="flex-1 min-w-0 px-5 py-4 row-hover" style={{ borderRadius: "0 14px 14px 0" }}>
-        {/* Top row — site + meta */}
-        <div className="flex items-center gap-2 mb-2 flex-wrap">
+      <div style={{ padding: "16px 18px" }}>
+        {/* Top row */}
+        <div className="flex items-center gap-2 mb-2.5 flex-wrap">
           {showSite && (
             <span
-              className="inline-flex items-center gap-1 truncate max-w-[44%]"
-              style={{ fontSize: 12, fontWeight: 600, color: "var(--foreground-3)", letterSpacing: "-0.005em" }}
+              className="inline-flex items-center gap-1 max-w-[46%] truncate"
+              style={{ fontSize: 11.5, fontWeight: 600, color: "var(--foreground-3)" }}
             >
               {change.site.name}
-              <ExternalLink size={10} strokeWidth={2} className="shrink-0 opacity-50" aria-hidden />
+              <ExternalLink size={9} strokeWidth={2} className="shrink-0 opacity-50" aria-hidden />
             </span>
           )}
 
-          <span className={`pill ${SEV_PILL[sev]}`} style={{ fontSize: 11 }}>
+          <span className={`pill ${SEV_PILL[sev]}`} style={{ fontSize: 10.5, padding: "1px 8px" }}>
             {CATEGORY_LABELS[change.category]}
           </span>
-
-          {sev >= 3 && (
-            <span className={`sev-pill sev-${sev}`} style={{ fontSize: 11 }}>
-              sev {sev}
-            </span>
-          )}
 
           <span
             className="ml-auto inline-flex items-center gap-1 shrink-0"
@@ -94,12 +104,12 @@ export function ChangeCard({ change, showSite = true }: ChangeCardProps) {
           </span>
         </div>
 
-        {/* Summary — primary content */}
+        {/* Summary */}
         <p
           style={{
-            fontSize: 14,
+            fontSize: 13.5,
             fontWeight: 600,
-            letterSpacing: "-0.014em",
+            letterSpacing: "-0.012em",
             color: "var(--foreground)",
             lineHeight: 1.4,
           }}
@@ -107,15 +117,14 @@ export function ChangeCard({ change, showSite = true }: ChangeCardProps) {
           {change.summary}
         </p>
 
-        {/* Detail — secondary content */}
+        {/* Detail */}
         {change.detail && (
           <p
-            className="mt-1 line-clamp-2"
+            className="mt-1.5 line-clamp-2"
             style={{
-              fontSize: 13,
+              fontSize: 12.5,
               color: "var(--foreground-3)",
-              lineHeight: 1.5,
-              letterSpacing: "-0.005em",
+              lineHeight: 1.55,
             }}
           >
             {change.detail}

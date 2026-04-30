@@ -17,10 +17,9 @@ export default function NewSitePage() {
 
       {/* Hero */}
       <div className="mb-8 animate-fade-up">
-        <span className="eyebrow inline-block mb-3">New</span>
         <h1 className="hero-title">Add site</h1>
-        <p className="hero-sub mt-3">
-          Enter a URL and AI will analyse the page to suggest optimal monitoring settings.
+        <p className="hero-sub mt-1">
+          Enter a URL — AI analyses the page and suggests optimal monitoring settings.
         </p>
       </div>
 

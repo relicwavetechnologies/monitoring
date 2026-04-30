@@ -76,14 +76,10 @@ export default async function AdminPage() {
   return (
     <div className="max-w-5xl mx-auto">
       {/* Hero */}
-      <div className="mb-10 animate-fade-up">
-        <span className="eyebrow inline-block mb-3">Operations</span>
+      <div className="mb-8 animate-fade-up">
         <h1 className="hero-title">Admin</h1>
-        <p className="hero-sub mt-2">
-          Operational pulse — queue, costs, classifier health.{" "}
-          <span style={{ color: "var(--foreground-4)" }}>
-            Raw counters at <code className="mono" style={{ fontSize: 13 }}>/api/admin/metrics</code>.
-          </span>
+        <p className="hero-sub mt-1">
+          Queue depth, costs, and classifier health.
         </p>
       </div>
 

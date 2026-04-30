@@ -100,11 +100,13 @@ function SectionHead({
   accent?: boolean;
 }) {
   return (
-    <div className="flex items-baseline justify-between mb-3.5">
-      <h3 className="text-headline" style={{ color: "var(--foreground)" }}>
+    <div className="flex items-center justify-between mb-3">
+      <h3
+        style={{ fontSize: 13, fontWeight: 600, letterSpacing: "-0.008em", color: "var(--foreground-2)" }}
+      >
         {label}
       </h3>
-      <span className={`pill ${accent ? "pill-blue" : "pill-muted"} tabular`}>
+      <span className="pill pill-muted tabular" style={{ fontSize: 11 }}>
         {count}
       </span>
     </div>
@@ -115,11 +117,10 @@ export default function OverviewPage() {
   return (
     <div className="max-w-5xl mx-auto">
       {/* Hero */}
-      <div className="mb-10 animate-fade-up">
-        <span className="eyebrow inline-block mb-3">Dashboard</span>
+      <div className="mb-8 animate-fade-up">
         <h1 className="hero-title">Overview</h1>
-        <p className="hero-sub mt-3 max-w-2xl">
-          Every visa-related change detected across your monitored sites — sorted by what matters.
+        <p className="hero-sub mt-1">
+          Visa-related changes across all monitored sites, sorted by severity.
         </p>
       </div>
 

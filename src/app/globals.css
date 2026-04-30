@@ -285,11 +285,11 @@
       "Segoe UI",
       "Roboto",
       sans-serif;
-    font-size: 15px;
-    line-height: 1.45;
-    letter-spacing: -0.011em;
+    font-size: 14px;
+    line-height: 1.5;
+    letter-spacing: -0.006em;
     color: var(--foreground);
-    font-feature-settings: "ss01", "cv11";
+    font-feature-settings: "cv11";
   }
 
   /* ── APPLE TEXT STYLES ────────────────────────────────────────────
@@ -417,17 +417,17 @@
 /* ── Hero typography ──────────────────────────────────────────────── */
 
 .hero-title {
-  font-size: clamp(34px, 4.8vw, 56px);
-  letter-spacing: -0.030em;
-  line-height: 1.05;
+  font-size: 26px;
+  letter-spacing: -0.025em;
+  line-height: 1.15;
   font-weight: 700;
   color: var(--foreground);
 }
 .hero-sub {
-  font-size: 19px;
+  font-size: 14px;
   color: var(--foreground-3);
-  line-height: 1.4;
-  letter-spacing: -0.019em;
+  line-height: 1.55;
+  letter-spacing: -0.006em;
   font-weight: 400;
 }
 

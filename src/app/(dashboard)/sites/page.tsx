@@ -1,9 +1,9 @@
 import { db } from "@/lib/db";
 import Link from "next/link";
-import { SeverityDot } from "@/components/dashboard/severity-badge";
 import { formatDistanceToNow } from "@/lib/time";
-import { Plus, Globe, ExternalLink, ChevronRight } from "lucide-react";
+import { Plus, Globe, ExternalLink, Clock, AlertCircle } from "lucide-react";
 import { PollButton } from "@/components/dashboard/poll-button";
+import { EmptyState } from "@/components/dashboard/empty-state";
 
 export default async function SitesPage() {
   const sites = await db.site.findMany({
@@ -18,158 +18,151 @@ export default async function SitesPage() {
     },
   });
 
+  const totalUrls = sites.reduce((acc, s) => acc + s._count.monitoredUrls, 0);
+
   return (
     <div className="max-w-5xl mx-auto">
-      <div className="flex items-end justify-between mb-8 animate-fade-up">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6 animate-fade-up">
         <div>
-          <span className="eyebrow inline-block mb-3">Catalogue</span>
           <h1 className="hero-title">Sites</h1>
-          <p className="hero-sub mt-2">
-            {sites.length} site{sites.length !== 1 ? "s" : ""} monitored
-            {" · "}
-            {sites.reduce((acc, s) => acc + s._count.monitoredUrls, 0)} URLs
+          <p className="hero-sub mt-1">
+            {sites.length} site{sites.length !== 1 ? "s" : ""} · {totalUrls} URLs monitored
           </p>
         </div>
-        <Link href="/sites/new" className="btn-pill">
-          <Plus className="h-4 w-4" strokeWidth={2.4} />
+        <Link href="/sites/new" className="btn-pill" style={{ fontSize: 13, padding: "8px 16px" }}>
+          <Plus className="h-3.5 w-3.5 shrink-0" strokeWidth={2.4} />
           Add site
         </Link>
       </div>
 
       {sites.length === 0 ? (
-        <div
-          className="flex flex-col items-center justify-center py-24 text-center surface-flat animate-fade-up"
-          style={{ borderStyle: "dashed" }}
-        >
-          <div
-            className="h-12 w-12 rounded-full flex items-center justify-center mb-4"
-            style={{ background: "var(--background-2)" }}
-          >
-            <Globe className="h-6 w-6" strokeWidth={1.6} style={{ color: "var(--foreground-4)" }} />
-          </div>
-          <p className="text-headline" style={{ color: "var(--foreground)" }}>
-            No sites yet
-          </p>
-          <p className="text-subhead mt-1.5 mb-5" style={{ color: "var(--foreground-3)" }}>
-            Add your first visa site to start monitoring.
-          </p>
-          <Link href="/sites/new" className="btn-pill">
-            <Plus className="h-4 w-4" />
-            Add site
-          </Link>
-        </div>
+        <EmptyState
+          icon={Globe}
+          title="No sites yet"
+          description="Add your first visa site to start monitoring."
+          action={
+            <Link href="/sites/new" className="btn-pill" style={{ fontSize: 13, padding: "8px 16px" }}>
+              <Plus className="h-3.5 w-3.5" strokeWidth={2.4} />
+              Add site
+            </Link>
+          }
+        />
       ) : (
-        <div className="surface-flat overflow-hidden">
-          {sites.map((site, idx) => {
+        <div
+          className="grid gap-4"
+          style={{ gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))" }}
+        >
+          {sites.map((site) => {
             const lastChange = site.changes[0];
+            const hasSevereChange = lastChange && lastChange.severity >= 3;
+
             return (
               <div
                 key={site.id}
-                className="row-hover group flex items-center gap-4 px-5 py-4"
+                className="group"
                 style={{
-                  borderBottom:
-                    idx === sites.length - 1 ? "none" : "1px solid var(--border)",
+                  background: "var(--background-1)",
+                  border: `1px solid ${hasSevereChange ? "color-mix(in srgb, var(--orange) 30%, var(--border))" : "var(--border)"}`,
+                  borderRadius: 12,
+                  overflow: "hidden",
+                  display: "flex",
+                  flexDirection: "column",
+                  transition: "border-color 120ms ease, box-shadow 120ms ease",
                 }}
               >
-                {/* Site identity (link target) */}
-                <Link href={`/sites/${site.id}`} className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span
-                      className="truncate"
+                {/* Card body — links to site detail */}
+                <Link
+                  href={`/sites/${site.id}`}
+                  className="flex-1 block"
+                  style={{ padding: "18px 18px 14px" }}
+                >
+                  {/* Site name + status */}
+                  <div className="flex items-start justify-between gap-2 mb-1.5">
+                    <h3
                       style={{
                         fontSize: 14.5,
-                        fontWeight: 600,
+                        fontWeight: 700,
+                        letterSpacing: "-0.016em",
                         color: "var(--foreground)",
-                        letterSpacing: "-0.014em",
+                        lineHeight: 1.3,
                       }}
                     >
                       {site.name}
-                    </span>
+                    </h3>
                     {site.isActive ? (
-                      <span className="pill pill-green" style={{ fontSize: 10.5 }}>
-                        <span
-                          className="w-1.5 h-1.5 rounded-full inline-block"
-                          style={{ background: "var(--green)" }}
-                        />
+                      <span className="pill pill-green shrink-0" style={{ fontSize: 10.5 }}>
+                        <span className="status-dot status-dot-green" />
                         Active
                       </span>
                     ) : (
-                      <span className="pill pill-muted" style={{ fontSize: 10.5 }}>
+                      <span className="pill pill-muted shrink-0" style={{ fontSize: 10.5 }}>
                         Paused
                       </span>
                     )}
                   </div>
-                  <div
-                    className="flex items-center gap-1.5 mt-0.5 truncate"
-                    style={{
-                      fontSize: 12.5,
-                      color: "var(--foreground-3)",
-                      letterSpacing: "-0.005em",
-                    }}
-                  >
-                    <span className="mono">{new URL(site.url).hostname}</span>
-                    <ExternalLink className="h-3 w-3 opacity-60 shrink-0" />
-                    <span className="opacity-50 mx-1">·</span>
-                    <span>
-                      {site._count.monitoredUrls} URL
-                      {site._count.monitoredUrls !== 1 ? "s" : ""}
-                    </span>
-                  </div>
-                </Link>
 
-                {/* Last change */}
-                <Link
-                  href={`/sites/${site.id}`}
-                  className="hidden md:flex items-center gap-2 max-w-[260px] min-w-0"
-                  style={{ fontSize: 12.5, color: "var(--foreground-3)" }}
-                >
+                  {/* URL */}
+                  <div
+                    className="flex items-center gap-1 mb-3"
+                    style={{ fontSize: 12, color: "var(--foreground-4)" }}
+                  >
+                    <Globe className="h-3 w-3 shrink-0" strokeWidth={1.8} />
+                    <span className="truncate mono">{new URL(site.url).hostname}</span>
+                    <ExternalLink className="h-2.5 w-2.5 shrink-0 opacity-60" />
+                  </div>
+
+                  {/* Last change preview */}
                   {lastChange ? (
-                    <>
-                      <SeverityDot severity={lastChange.severity} />
-                      <span className="line-clamp-1">{lastChange.summary}</span>
-                    </>
+                    <p
+                      className="line-clamp-2"
+                      style={{
+                        fontSize: 12.5,
+                        color: hasSevereChange ? "var(--orange-ink)" : "var(--foreground-3)",
+                        lineHeight: 1.5,
+                      }}
+                    >
+                      {hasSevereChange && (
+                        <AlertCircle
+                          className="inline-block mr-1 -mt-0.5 h-3 w-3"
+                          strokeWidth={2}
+                          aria-hidden
+                        />
+                      )}
+                      {lastChange.summary}
+                    </p>
                   ) : (
-                    <span style={{ color: "var(--foreground-4)" }}>No changes yet</span>
+                    <p style={{ fontSize: 12.5, color: "var(--foreground-4)" }}>
+                      No changes detected yet
+                    </p>
                   )}
                 </Link>
 
-                <Link
-                  href={`/sites/${site.id}`}
-                  className="hidden lg:block label-mono shrink-0"
-                  style={{ minWidth: 80, textAlign: "right" }}
+                {/* Card footer */}
+                <div
+                  className="flex items-center justify-between px-4 py-3"
+                  style={{ borderTop: "1px solid var(--border)" }}
                 >
-                  {site.lastCheckedAt
-                    ? formatDistanceToNow(site.lastCheckedAt)
-                    : "—"}
-                </Link>
+                  {/* Meta */}
+                  <div className="flex items-center gap-3">
+                    <span
+                      className="inline-flex items-center gap-1"
+                      style={{ fontSize: 11.5, color: "var(--foreground-4)" }}
+                    >
+                      <Clock className="h-3 w-3" strokeWidth={1.8} />
+                      {site.lastCheckedAt ? formatDistanceToNow(site.lastCheckedAt) : "Never"}
+                    </span>
+                    <span style={{ fontSize: 11.5, color: "var(--foreground-4)" }}>
+                      {site._count.changes} changes
+                    </span>
+                    <span style={{ fontSize: 11.5, color: "var(--foreground-4)" }}>
+                      {site._count.monitoredUrls} URL{site._count.monitoredUrls !== 1 ? "s" : ""}
+                    </span>
+                  </div>
 
-                <Link
-                  href={`/sites/${site.id}`}
-                  className="tabular shrink-0"
-                  style={{
-                    fontSize: 13,
-                    fontWeight: 600,
-                    color: "var(--foreground)",
-                    minWidth: 32,
-                    textAlign: "right",
-                    letterSpacing: "-0.011em",
-                  }}
-                >
-                  {site._count.changes}
-                </Link>
-
-                <PollButton siteId={site.id} />
-
-                <Link
-                  href={`/sites/${site.id}`}
-                  className="opacity-0 group-hover:opacity-100 transition-opacity"
-                  aria-label={`Open ${site.name}`}
-                >
-                  <ChevronRight
-                    className="h-4 w-4 shrink-0"
-                    style={{ color: "var(--foreground-3)" }}
-                  />
-                </Link>
+                  {/* Poll action */}
+                  <PollButton siteId={site.id} />
+                </div>
               </div>
             );
           })}
