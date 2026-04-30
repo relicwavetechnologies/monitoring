@@ -22,30 +22,22 @@ async function StatsRow() {
 
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-10">
-      {stats.map(({ n, label, sub }) => (
+      {stats.map(({ n, label, sub }, i) => (
         <div
           key={label}
-          className="surface-raised p-5 animate-fade-up"
+          className={`surface-raised animate-fade-up stagger-${i + 1}`}
+          style={{ padding: "20px 22px" }}
         >
-          <div className="stat-number">{n.toLocaleString()}</div>
+          <div className="stat-number-lg">{n.toLocaleString()}</div>
           <div
-            className="mt-2"
-            style={{
-              fontSize: 13,
-              fontWeight: 500,
-              color: "var(--foreground)",
-              letterSpacing: "-0.011em",
-            }}
+            className="text-footnote-em mt-3"
+            style={{ color: "var(--foreground)" }}
           >
             {label}
           </div>
           <div
-            style={{
-              fontSize: 12,
-              color: "var(--foreground-3)",
-              marginTop: 1,
-              letterSpacing: "-0.005em",
-            }}
+            className="text-footnote mt-0.5"
+            style={{ color: "var(--foreground-3)" }}
           >
             {sub}
           </div>
@@ -134,20 +126,11 @@ function SectionHead({
   accent?: boolean;
 }) {
   return (
-    <div className="flex items-baseline justify-between mb-3">
-      <h3
-        style={{
-          fontSize: 16,
-          fontWeight: 600,
-          letterSpacing: "-0.018em",
-          color: "var(--foreground)",
-        }}
-      >
+    <div className="flex items-baseline justify-between mb-3.5">
+      <h3 className="text-headline" style={{ color: "var(--foreground)" }}>
         {label}
       </h3>
-      <span
-        className={`pill ${accent ? "pill-blue" : "pill-muted"} tabular`}
-      >
+      <span className={`pill ${accent ? "pill-blue" : "pill-muted"} tabular`}>
         {count}
       </span>
     </div>
@@ -159,8 +142,8 @@ export default function OverviewPage() {
     <div className="max-w-5xl mx-auto pb-12">
       {/* Hero */}
       <div className="mb-10 animate-fade-up">
-        <span className="eyebrow mb-3 inline-block">Dashboard</span>
-        <h1 className="hero-title mt-2">Overview</h1>
+        <span className="eyebrow inline-block mb-3">Dashboard</span>
+        <h1 className="hero-title">Overview</h1>
         <p className="hero-sub mt-3 max-w-2xl">
           Every visa-related change detected across your monitored sites — sorted by what matters.
         </p>

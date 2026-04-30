@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { ChevronRight, LogOut, Settings } from "lucide-react";
-import { signOut } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -12,7 +12,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useSession } from "next-auth/react";
 
 const CRUMBS: Record<string, string> = {
   "/": "Overview",
@@ -46,12 +45,9 @@ export function Topbar() {
 
   return (
     <header
-      className="glass h-14 flex items-center justify-between px-6 sticky top-0 z-10"
-      style={{
-        borderBottom: "1px solid var(--border)",
-      }}
+      className="glass-strong h-14 flex items-center justify-between px-7 sticky top-0 z-10"
+      style={{ borderBottom: "1px solid var(--border)" }}
     >
-      {/* ── Breadcrumb ────────────────────────────────────────── */}
       <nav className="flex items-center gap-1.5 min-w-0">
         <Link
           href="/"
@@ -86,9 +82,8 @@ export function Topbar() {
             ) : (
               <Link
                 href={href}
-                className="truncate"
+                className="subtle-link truncate"
                 style={{
-                  color: "var(--foreground-3)",
                   fontSize: 13,
                   letterSpacing: "-0.011em",
                 }}
@@ -100,21 +95,21 @@ export function Topbar() {
         ))}
       </nav>
 
-      {/* ── Right ────────────────────────────────────────────── */}
       <div className="flex items-center gap-3">
         <DropdownMenu>
-          <DropdownMenuTrigger className="rounded-full focus:outline-none focus-visible:ring-2">
+          <DropdownMenuTrigger className="rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent">
             <Avatar
-              className="h-8 w-8 cursor-pointer transition-all"
+              className="h-8 w-8 cursor-pointer"
               style={{
-                boxShadow: "0 0 0 1.5px var(--border-2), var(--shadow-xs)",
+                boxShadow:
+                  "0 0 0 1.5px var(--border-2), 0 0.5px 1px rgba(0,0,0,0.04)",
               }}
             >
               <AvatarFallback
                 className="text-[11px] font-semibold text-white tabular"
                 style={{
                   background:
-                    "linear-gradient(135deg, var(--primary), var(--indigo))",
+                    "linear-gradient(135deg, #007AFF 0%, #5856D6 100%)",
                   letterSpacing: "-0.005em",
                 }}
               >
@@ -124,27 +119,24 @@ export function Topbar() {
           </DropdownMenuTrigger>
           <DropdownMenuContent
             align="end"
-            className="w-56"
+            sideOffset={8}
+            className="w-60 p-1"
             style={{
               background: "var(--background-1)",
               borderColor: "var(--border)",
               borderRadius: "var(--radius-md)",
               boxShadow: "var(--shadow-lg)",
-              padding: 4,
             }}
           >
             <div className="px-3 py-2.5">
               <p
-                className="text-sm font-semibold"
-                style={{
-                  color: "var(--foreground)",
-                  letterSpacing: "-0.014em",
-                }}
+                className="text-headline"
+                style={{ color: "var(--foreground)" }}
               >
                 {session?.user?.name ?? "User"}
               </p>
               <p
-                className="text-xs truncate mt-0.5 mono"
+                className="text-footnote mono mt-0.5 truncate"
                 style={{ color: "var(--foreground-3)" }}
               >
                 {session?.user?.email}
@@ -154,6 +146,7 @@ export function Topbar() {
             <DropdownMenuItem
               className="cursor-pointer rounded-md"
               onClick={() => router.push("/settings")}
+              style={{ fontSize: 13.5, letterSpacing: "-0.011em" }}
             >
               <Settings className="h-4 w-4 mr-2" strokeWidth={1.85} />
               Settings
@@ -161,8 +154,12 @@ export function Topbar() {
             <DropdownMenuSeparator style={{ background: "var(--border)" }} />
             <DropdownMenuItem
               className="cursor-pointer rounded-md"
-              style={{ color: "var(--red-ink)" }}
               onClick={() => signOut({ callbackUrl: "/login" })}
+              style={{
+                color: "var(--red-ink)",
+                fontSize: 13.5,
+                letterSpacing: "-0.011em",
+              }}
             >
               <LogOut className="h-4 w-4 mr-2" strokeWidth={1.85} />
               Sign out

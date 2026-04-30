@@ -4,111 +4,182 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* ─────────────────────────────────────────────────────────────────────
- * VisaWatch · Apple-inspired design system
+/* ═════════════════════════════════════════════════════════════════════
+ * VisaWatch · Apple-grade design system (v2)
  *
- * Principles:
- *   1. CLARITY — Type is the UI. Generous hierarchy, true neutrals,
- *      tight tracking on display sizes, tabular numbers for data.
- *   2. DEFERENCE — UI yields to content. Frosted-glass chrome, soft
- *      borders, restrained color, content-first layouts.
- *   3. DEPTH — Layered surfaces with soft shadows, smooth motion,
- *      rounded radii that match physical scale.
+ * Built from a deep read of:
+ *   - Apple Human Interface Guidelines (iOS 18 / iOS 26 / macOS Tahoe)
+ *   - WWDC 2025 "Get to know the new design system" (Liquid Glass)
+ *   - SF Pro typography reference (sf-pro-display vs sf-pro-text)
+ *   - Apple semantic system colors + label hierarchy (UIColor)
+ *   - apple.com production CSS (warm off-white, hairline borders,
+ *     980px pill buttons, 17–22pt body)
  *
- * Palette is built around Apple's system colors (light mode):
- *   - Backgrounds: pure white + the signature warm off-white #fbfbfd
- *   - Inks: 1d1d1f → 424245 → 6e6e73 → 86868b
- *   - Accent: System Blue #0071e3 (#0077ed for hover)
- *   - Borders: #d2d2d7, #e8e8ed
- * ───────────────────────────────────────────────────────────────────── */
+ * Core convictions baked in:
+ *   1. CLARITY — Type leads. Tabular numerals everywhere data lives.
+ *      Severity / status mapped to a *fixed* semantic color set.
+ *   2. DEFERENCE — Chrome is glass and yields. Borders are hairlines.
+ *      Shadows are 0–1px crisp, multi-layer, never heavy.
+ *   3. DEPTH — Layered surfaces with continuous-corner radii. Hover
+ *      lifts 1px max. Motion is gentle and standard-eased.
+ *
+ * If you change a token here, you change every page. Treat this file
+ * like the design system it is.
+ * ═════════════════════════════════════════════════════════════════════ */
 
 :root {
-  /* ── Surfaces ────────────────────────────────────────────────────── */
-  --background:       oklch(0.991 0.002 280);   /* #fbfbfd — warm off-white */
-  --background-1:     oklch(1 0 0);             /* #ffffff — true white */
-  --background-2:     oklch(0.967 0.003 280);   /* #f5f5f7 — Apple sub-surface */
-  --background-3:     oklch(0.929 0.003 280);   /* #ececef */
+  /* ── SURFACES ───────────────────────────────────────────────────────
+   * Apple's web baseline is the warm off-white #fbfbfd plus pure white
+   * for elevated cards. iOS uses a slightly grouped scale on top.
+   * ─────────────────────────────────────────────────────────────────── */
+  --background:        #fbfbfd;     /* page */
+  --background-1:      #ffffff;     /* card / popover */
+  --background-2:      #f5f5f7;     /* sub-surface, hover row */
+  --background-3:      #ececef;     /* inset zones, progress track */
+  --background-4:      #e5e5ea;     /* deeper inset, disabled */
+  --background-grouped:#f2f2f7;     /* iOS grouped table background */
 
-  /* Glass surfaces (used with backdrop-filter) */
-  --glass-bg:         rgba(255, 255, 255, 0.72);
-  --glass-border:     rgba(0, 0, 0, 0.06);
+  /* Liquid Glass surfaces (translucent, used with backdrop-filter) */
+  --glass-bg-strong:   rgba(255, 255, 255, 0.86);
+  --glass-bg:          rgba(255, 255, 255, 0.72);
+  --glass-bg-thin:     rgba(255, 255, 255, 0.55);
+  --glass-border:      rgba(0, 0, 0, 0.06);
+  --glass-border-2:    rgba(0, 0, 0, 0.10);
 
-  /* ── Inks (text hierarchy) ───────────────────────────────────────── */
-  --foreground:       oklch(0.20 0.005 280);    /* #1d1d1f — primary */
-  --foreground-2:     oklch(0.36 0.003 280);    /* #424245 — secondary */
-  --foreground-3:     oklch(0.50 0.003 280);    /* #6e6e73 — tertiary */
-  --foreground-4:     oklch(0.62 0.003 280);    /* #86868b — quaternary */
+  /* ── LABELS (Apple text-color hierarchy) ────────────────────────────
+   * On iOS the secondary/tertiary/quaternary labels are tinted alphas
+   * over the page background — gives them a unique blue-grey cast.
+   * For our white-ish background we approximate with neutral greys plus
+   * the exact alpha-on-pure-black variants for accent tints.
+   * ─────────────────────────────────────────────────────────────────── */
+  --foreground:        #1d1d1f;     /* label primary (apple.com text) */
+  --foreground-2:      #424245;     /* label secondary */
+  --foreground-3:      #6e6e73;     /* tertiary — caption, placeholders */
+  --foreground-4:      #86868b;     /* quaternary — line-mono labels */
+  --foreground-5:      #aeaeb2;     /* lightest — dividers' text equiv */
 
-  /* ── Accent: System Blue ──────────────────────────────────────────── */
-  --primary:          oklch(0.57 0.21 252);     /* #0071e3 */
-  --primary-hover:    oklch(0.61 0.22 252);     /* #0077ed */
-  --primary-foreground: oklch(1 0 0);
-  --accent-dim:       oklch(0.57 0.21 252 / 0.10);
-  --accent-line:      oklch(0.57 0.21 252 / 0.22);
-  --accent-tint:      oklch(0.57 0.21 252 / 0.06);
+  /* Apple alpha-tinted label variants (for use over color backgrounds) */
+  --label-primary-alpha:    rgba(0, 0, 0, 0.85);
+  --label-secondary-alpha:  rgba(60, 60, 67, 0.60);
+  --label-tertiary-alpha:   rgba(60, 60, 67, 0.30);
+  --label-quaternary-alpha: rgba(60, 60, 67, 0.18);
 
-  /* ── Card / popover ──────────────────────────────────────────────── */
-  --card:             var(--background-1);
-  --card-foreground:  var(--foreground);
-  --popover:          var(--background-1);
-  --popover-foreground: var(--foreground);
+  /* ── PRIMARY: iOS systemBlue ────────────────────────────────────────
+   * Light mode: #007AFF (RGB 0, 122, 255). Sharper than the apple.com
+   * web blue; aligns with iOS / macOS native controls.
+   * ─────────────────────────────────────────────────────────────────── */
+  --primary:           #007AFF;
+  --primary-hover:     #0066D6;     /* slight darken for press/hover */
+  --primary-active:    #005CBE;     /* deeper for active/pressed */
+  --primary-foreground:#ffffff;
+  --accent-strong:     rgba(0, 122, 255, 0.18);
+  --accent-line:       rgba(0, 122, 255, 0.22);
+  --accent-dim:        rgba(0, 122, 255, 0.10);
+  --accent-tint:       rgba(0, 122, 255, 0.06);
 
-  /* ── Secondary surfaces / muted ───────────────────────────────────── */
-  --secondary:        oklch(0.967 0.003 280);
+  /* ── CARD / POPOVER ─────────────────────────────────────────────────*/
+  --card:              var(--background-1);
+  --card-foreground:   var(--foreground);
+  --popover:           var(--background-1);
+  --popover-foreground:var(--foreground);
+
+  /* ── SECONDARY / MUTED ──────────────────────────────────────────────*/
+  --secondary:         var(--background-2);
   --secondary-foreground: var(--foreground-2);
-  --muted:            oklch(0.967 0.003 280);
-  --muted-foreground: var(--foreground-3);
-  --accent:           oklch(0.967 0.003 280);
+  --muted:             var(--background-2);
+  --muted-foreground:  var(--foreground-3);
+  --accent:            var(--background-2);
   --accent-foreground: var(--foreground);
 
-  /* ── Apple system semantic colors ────────────────────────────────── */
-  --green:            oklch(0.71 0.18 150);     /* #34c759 system green */
-  --green-soft:       oklch(0.95 0.05 150);
-  --green-ink:        oklch(0.45 0.16 150);
+  /* ── APPLE SYSTEM COLORS (exact iOS 18 light-mode hex) ──────────────
+   * Each gets a "soft" (pill background) and "ink" (pill foreground)
+   * derived to maintain WCAG AA contrast on the soft surface.
+   * ─────────────────────────────────────────────────────────────────── */
 
-  --red:              oklch(0.62 0.23 26);      /* #ff3b30 system red */
-  --red-soft:         oklch(0.96 0.04 26);
-  --red-ink:          oklch(0.50 0.20 26);
+  /* systemGreen #34C759 */
+  --green:             #34C759;
+  --green-soft:        #E8F8EC;
+  --green-ink:         #1F7A39;
 
-  --orange:           oklch(0.74 0.18 60);      /* #ff9500 system orange */
-  --orange-soft:      oklch(0.97 0.06 75);
-  --orange-ink:       oklch(0.50 0.16 60);
+  /* systemRed #FF3B30 */
+  --red:               #FF3B30;
+  --red-soft:          #FEEAE8;
+  --red-ink:           #B82820;
 
-  --yellow:           oklch(0.85 0.16 95);      /* #ffcc00 system yellow */
-  --yellow-soft:      oklch(0.97 0.07 95);
-  --yellow-ink:       oklch(0.50 0.14 80);
+  /* systemOrange #FF9500 */
+  --orange:            #FF9500;
+  --orange-soft:       #FFF1DE;
+  --orange-ink:        #9A5A00;
 
-  --indigo:           oklch(0.55 0.20 265);     /* #5856d6 system indigo */
-  --indigo-soft:      oklch(0.96 0.04 265);
-  --indigo-ink:       oklch(0.45 0.18 265);
+  /* systemYellow #FFCC00 — used sparingly (warning text needs care) */
+  --yellow:            #FFCC00;
+  --yellow-soft:       #FFF8D9;
+  --yellow-ink:        #7A6300;
 
-  --destructive:      var(--red);
-  --destructive-foreground: oklch(1 0 0);
+  /* systemIndigo #5856D6 */
+  --indigo:            #5856D6;
+  --indigo-soft:       #EBEAFB;
+  --indigo-ink:        #3F3DA0;
 
-  /* ── Borders / inputs ────────────────────────────────────────────── */
-  --border:           oklch(0.91 0.002 280);    /* #e8e8ed */
-  --border-2:         oklch(0.85 0.002 280);    /* #d2d2d7 */
-  --border-strong:    oklch(0.78 0.003 280);
-  --input:            var(--border);
-  --ring:             oklch(0.57 0.21 252 / 0.50);
+  /* systemTeal #30B0C7 */
+  --teal:              #30B0C7;
+  --teal-soft:         #E1F4F8;
+  --teal-ink:          #1F7A8A;
 
-  /* ── Charts ──────────────────────────────────────────────────────── */
-  --chart-1: oklch(0.57 0.21 252);
-  --chart-2: oklch(0.71 0.18 150);
-  --chart-3: oklch(0.74 0.18 60);
-  --chart-4: oklch(0.55 0.20 265);
-  --chart-5: oklch(0.62 0.23 26);
+  /* systemPink #FF2D55 — accents only, not status */
+  --pink:              #FF2D55;
+  --pink-soft:         #FFE6EC;
+  --pink-ink:          #B5223D;
 
-  /* ── Radii (Apple's preferred scale) ─────────────────────────────── */
-  --radius-xs: 6px;
-  --radius-sm: 8px;
-  --radius:    12px;
-  --radius-md: 14px;
-  --radius-lg: 18px;
-  --radius-xl: 22px;
+  /* systemPurple #AF52DE */
+  --purple:            #AF52DE;
+  --purple-soft:       #F4E8FB;
+  --purple-ink:        #7A39A0;
+
+  --destructive:           var(--red);
+  --destructive-foreground:#ffffff;
+
+  /* ── APPLE GRAY SCALE (light mode systemGray1–6) ────────────────────
+   * Useful for borders, dividers, neutral surfaces. Strict ordering.
+   * ─────────────────────────────────────────────────────────────────── */
+  --gray:              #8E8E93;     /* systemGray  */
+  --gray-2:            #AEAEB2;     /* systemGray2 */
+  --gray-3:            #C7C7CC;     /* systemGray3 */
+  --gray-4:            #D1D1D6;     /* systemGray4 */
+  --gray-5:            #E5E5EA;     /* systemGray5 */
+  --gray-6:            #F2F2F7;     /* systemGray6 */
+
+  /* ── BORDERS / INPUTS ───────────────────────────────────────────────*/
+  --border:            #e5e5ea;     /* hairline (systemGray5) */
+  --border-2:          #d1d1d6;     /* defined (systemGray4) */
+  --border-strong:     #c7c7cc;     /* emphasized (systemGray3) */
+  --separator:         rgba(60, 60, 67, 0.16);  /* iOS opaqueSeparator */
+  --separator-thin:    rgba(60, 60, 67, 0.10);
+  --input:             var(--border);
+  --ring:              rgba(0, 122, 255, 0.50);
+
+  /* ── CHARTS (systemBlue, Green, Orange, Indigo, Red) ────────────────*/
+  --chart-1: #007AFF;
+  --chart-2: #34C759;
+  --chart-3: #FF9500;
+  --chart-4: #5856D6;
+  --chart-5: #FF3B30;
+
+  /* ── RADII (Apple's preferred scale, continuous-corner aware) ───────
+   * iOS 26 introduces `corner-shape: squircle` but adoption is uneven —
+   * we use plain border-radius. The values are chosen so they read as
+   * Apple-correct: 6/8/12/16/20/26 for cards/buttons, 980 for pills.
+   * ─────────────────────────────────────────────────────────────────── */
+  --radius-xs:   6px;
+  --radius-sm:   8px;
+  --radius:      12px;     /* default card */
+  --radius-md:   14px;     /* emphasized card */
+  --radius-lg:   18px;     /* modal / large card */
+  --radius-xl:   22px;     /* hero card / sheet */
+  --radius-2xl:  28px;     /* iOS 26 large container */
   --radius-pill: 980px;
 
-  /* ── Sidebar (frosted glass) ─────────────────────────────────────── */
+  /* ── SIDEBAR (frosted glass) ────────────────────────────────────────*/
   --sidebar:                    var(--glass-bg);
   --sidebar-foreground:         var(--foreground);
   --sidebar-primary:            var(--primary);
@@ -118,18 +189,33 @@
   --sidebar-border:             var(--border);
   --sidebar-ring:               var(--ring);
 
-  /* ── Shadows: layered, soft, Apple-style ─────────────────────────── */
-  --shadow-xs:  0 1px 1.5px rgba(0, 0, 0, 0.04);
-  --shadow-sm:  0 1px 2px rgba(0, 0, 0, 0.04), 0 2px 6px rgba(0, 0, 0, 0.03);
+  /* ── SHADOWS (soft, layered, used SPARINGLY) ────────────────────────
+   * Apple guideline: shadows are rare; when used they are 0-2px crisp
+   * + a very wide soft glow. Never harder than 0.10 alpha.
+   * ─────────────────────────────────────────────────────────────────── */
+  --shadow-xs:  0 0.5px 1px rgba(0, 0, 0, 0.04);
+  --shadow-sm:  0 1px 2px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.03);
   --shadow:     0 1px 2px rgba(0, 0, 0, 0.04), 0 4px 12px rgba(0, 0, 0, 0.04);
   --shadow-md:  0 2px 4px rgba(0, 0, 0, 0.05), 0 8px 24px rgba(0, 0, 0, 0.06);
-  --shadow-lg:  0 6px 12px rgba(0, 0, 0, 0.06), 0 16px 40px rgba(0, 0, 0, 0.10);
-  --shadow-xl:  0 20px 60px rgba(0, 0, 0, 0.18);
+  --shadow-lg:  0 4px 8px rgba(0, 0, 0, 0.05), 0 16px 40px rgba(0, 0, 0, 0.08);
+  --shadow-xl:  0 24px 48px rgba(0, 0, 0, 0.10), 0 8px 16px rgba(0, 0, 0, 0.05);
+  --shadow-button: 0 1px 2px rgba(0, 122, 255, 0.30);
+  --shadow-button-hover: 0 2px 6px rgba(0, 122, 255, 0.36);
 
-  /* ── Easing ──────────────────────────────────────────────────────── */
+  /* ── EASING (Apple standard) ────────────────────────────────────────
+   * Apple uses "ease-out" most often (cubic-bezier(0.0, 0.0, 0.58, 1.0))
+   * for state changes. The "spring" curve is for delightful entrances.
+   * ─────────────────────────────────────────────────────────────────── */
   --ease-standard:    cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-out:         cubic-bezier(0.0, 0.0, 0.58, 1.0);
   --ease-emphasized:  cubic-bezier(0.2, 0, 0, 1);
   --ease-spring:      cubic-bezier(0.5, 1.4, 0.5, 1);
+
+  /* Durations */
+  --d-fast:    120ms;
+  --d-base:    180ms;
+  --d-slow:    240ms;
+  --d-slower:  320ms;
 }
 
 @theme inline {
@@ -174,18 +260,19 @@
 }
 
 @layer base {
-  * {
-    @apply border-border outline-ring/50;
-  }
+  * { @apply border-border outline-ring/50; }
 
   html {
     scroll-behavior: smooth;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    /* Apple's signature: prevent overscroll bounce in dashboards */
+    overscroll-behavior-y: none;
   }
 
-  /* SF Pro chain on Apple, Inter elsewhere. ss01 + cv11 = closer SF feel. */
+  /* SF Pro chain → Inter fallback. ss01 + cv11 give Inter a closer SF
+     read on non-Apple platforms. tnum off by default; opt-in via .tabular */
   body {
     @apply bg-background text-foreground;
     font-family:
@@ -199,11 +286,36 @@
       "Roboto",
       sans-serif;
     font-size: 15px;
-    line-height: 1.5;
+    line-height: 1.45;
     letter-spacing: -0.011em;
     color: var(--foreground);
     font-feature-settings: "ss01", "cv11";
   }
+
+  /* ── APPLE TEXT STYLES ────────────────────────────────────────────
+   * Mapped from iOS HIG. Names align with Apple's reference. Each style
+   * has a fixed size, weight, line-height, and per-size letter-spacing
+   * (SF Pro's optical scale).
+   * ────────────────────────────────────────────────────────────────── */
+
+  .text-large-title { font-size: 34px; line-height: 41px; font-weight: 700; letter-spacing: -0.022em; }
+  .text-title-1     { font-size: 28px; line-height: 34px; font-weight: 700; letter-spacing: -0.024em; }
+  .text-title-2     { font-size: 22px; line-height: 28px; font-weight: 700; letter-spacing: -0.022em; }
+  .text-title-3     { font-size: 20px; line-height: 25px; font-weight: 600; letter-spacing: -0.020em; }
+  .text-headline    { font-size: 17px; line-height: 22px; font-weight: 600; letter-spacing: -0.024em; }
+  .text-body        { font-size: 17px; line-height: 22px; font-weight: 400; letter-spacing: -0.024em; }
+  .text-callout     { font-size: 16px; line-height: 21px; font-weight: 400; letter-spacing: -0.019em; }
+  .text-subhead     { font-size: 15px; line-height: 20px; font-weight: 400; letter-spacing: -0.011em; }
+  .text-footnote    { font-size: 13px; line-height: 18px; font-weight: 400; letter-spacing: -0.005em; }
+  .text-caption-1   { font-size: 12px; line-height: 16px; font-weight: 400; letter-spacing: 0;        }
+  .text-caption-2   { font-size: 11px; line-height: 13px; font-weight: 500; letter-spacing: 0.04em;   }
+
+  /* Modifier: emphasized variants (semibold) for callouts and inline emphasis */
+  .text-headline-em { font-weight: 700; }
+  .text-body-em     { font-weight: 600; }
+  .text-callout-em  { font-weight: 600; }
+  .text-subhead-em  { font-weight: 600; }
+  .text-footnote-em { font-weight: 600; }
 
   h1, h2, h3, h4, h5, h6 {
     font-family: inherit;
@@ -213,14 +325,11 @@
     line-height: 1.15;
   }
 
-  h1 {
-    font-size: clamp(28px, 4vw, 40px);
-    letter-spacing: -0.030em;
-    font-weight: 700;
-  }
-  h2 { font-size: 22px; letter-spacing: -0.022em; font-weight: 600; }
-  h3 { font-size: 18px; letter-spacing: -0.018em; font-weight: 600; }
-  h4 { font-size: 15px; font-weight: 600; }
+  /* Defaults (rarely used directly — prefer the .text-* classes) */
+  h1 { font-size: 28px; line-height: 34px; font-weight: 700; letter-spacing: -0.024em; }
+  h2 { font-size: 22px; line-height: 28px; font-weight: 700; letter-spacing: -0.022em; }
+  h3 { font-size: 20px; line-height: 25px; font-weight: 600; letter-spacing: -0.020em; }
+  h4 { font-size: 17px; line-height: 22px; font-weight: 600; letter-spacing: -0.024em; }
 
   p { color: var(--foreground-2); }
 
@@ -241,15 +350,29 @@
   ::selection { background: var(--accent-dim); color: var(--foreground); }
 }
 
-/* ─────────────────────────────────────────────────────────────────────
- * Utility classes
- * ───────────────────────────────────────────────────────────────────── */
+/* ═════════════════════════════════════════════════════════════════════
+ * UTILITY CLASSES
+ * ═════════════════════════════════════════════════════════════════════ */
+
+/* ── Glass surfaces (Liquid Glass-inspired) ───────────────────────── */
 
 .glass {
   background: var(--glass-bg);
   backdrop-filter: saturate(180%) blur(20px);
   -webkit-backdrop-filter: saturate(180%) blur(20px);
 }
+.glass-strong {
+  background: var(--glass-bg-strong);
+  backdrop-filter: saturate(180%) blur(28px);
+  -webkit-backdrop-filter: saturate(180%) blur(28px);
+}
+.glass-thin {
+  background: var(--glass-bg-thin);
+  backdrop-filter: saturate(180%) blur(14px);
+  -webkit-backdrop-filter: saturate(180%) blur(14px);
+}
+
+/* ── Eyebrow / mono captions ──────────────────────────────────────── */
 
 .eyebrow {
   font-family: ui-monospace, "SF Mono", var(--font-mono), monospace;
@@ -265,7 +388,10 @@
   font-size: 11px;
   font-weight: 500;
   color: var(--foreground-3);
+  letter-spacing: 0;
 }
+
+/* ── Surfaces ─────────────────────────────────────────────────────── */
 
 .surface {
   background: var(--background-1);
@@ -273,36 +399,51 @@
   border-radius: var(--radius);
   box-shadow: var(--shadow-xs);
 }
+
 .surface-flat {
   background: var(--background-1);
   border: 1px solid var(--border);
   border-radius: var(--radius);
 }
+
 .surface-raised {
   background: var(--background-1);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   box-shadow: var(--shadow-sm);
-  transition: box-shadow 0.18s var(--ease-standard), transform 0.18s var(--ease-standard);
+  transition: box-shadow var(--d-base) var(--ease-out),
+              transform var(--d-base) var(--ease-out),
+              border-color var(--d-base) var(--ease-out);
 }
 .surface-raised:hover {
   box-shadow: var(--shadow-md);
   transform: translateY(-1px);
+  border-color: var(--border-2);
 }
 
+.surface-grouped {
+  background: var(--background-grouped);
+  border-radius: var(--radius);
+}
+
+/* ── Hero typography ──────────────────────────────────────────────── */
+
 .hero-title {
-  font-size: clamp(32px, 4.5vw, 48px);
+  font-size: clamp(34px, 4.8vw, 56px);
   letter-spacing: -0.030em;
   line-height: 1.05;
   font-weight: 700;
   color: var(--foreground);
 }
 .hero-sub {
-  font-size: 17px;
+  font-size: 19px;
   color: var(--foreground-3);
-  line-height: 1.5;
-  letter-spacing: -0.011em;
+  line-height: 1.4;
+  letter-spacing: -0.019em;
+  font-weight: 400;
 }
+
+/* ── Stat numerals ────────────────────────────────────────────────── */
 
 .stat-number {
   font-size: 34px;
@@ -313,36 +454,47 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* ── Severity & tone pills ───────────────────────────────────────── */
+.stat-number-lg {
+  font-size: 44px;
+  font-weight: 600;
+  letter-spacing: -0.030em;
+  line-height: 1;
+  color: var(--foreground);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── SEVERITY PILLS ──────────────────────────────────────────────── */
 
 .sev-pill {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 2px 9px;
+  padding: 2px 10px;
   border-radius: var(--radius-pill);
-  font-size: 11px;
+  font-size: 11.5px;
   font-weight: 500;
   letter-spacing: -0.005em;
-  line-height: 1.5;
+  line-height: 1.55;
   white-space: nowrap;
 }
 
 .sev-1 { background: var(--background-2); color: var(--foreground-3); border: 1px solid var(--border); }
 .sev-2 { background: var(--background-2); color: var(--foreground-2); border: 1px solid var(--border); }
-.sev-3 { background: var(--orange-soft); color: var(--orange-ink); border: 1px solid color-mix(in srgb, var(--orange) 20%, transparent); }
-.sev-4 { background: var(--red-soft); color: var(--red-ink); border: 1px solid color-mix(in srgb, var(--red) 20%, transparent); }
-.sev-5 { background: var(--red-soft); color: var(--red-ink); border: 1px solid color-mix(in srgb, var(--red) 35%, transparent); font-weight: 600; }
+.sev-3 { background: var(--orange-soft); color: var(--orange-ink); border: 1px solid color-mix(in srgb, var(--orange) 18%, transparent); }
+.sev-4 { background: var(--red-soft); color: var(--red-ink); border: 1px solid color-mix(in srgb, var(--red) 18%, transparent); }
+.sev-5 { background: var(--red-soft); color: var(--red-ink); border: 1px solid color-mix(in srgb, var(--red) 32%, transparent); font-weight: 600; }
+
+/* ── TONE PILLS ───────────────────────────────────────────────────── */
 
 .pill {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 2px 9px;
+  padding: 2px 10px;
   border-radius: var(--radius-pill);
-  font-size: 11px;
+  font-size: 11.5px;
   font-weight: 500;
-  line-height: 1.5;
+  line-height: 1.55;
   letter-spacing: -0.005em;
   white-space: nowrap;
   border: 1px solid transparent;
@@ -352,9 +504,128 @@
 .pill-red    { background: var(--red-soft); color: var(--red-ink); border-color: color-mix(in srgb, var(--red) 22%, transparent); }
 .pill-orange { background: var(--orange-soft); color: var(--orange-ink); border-color: color-mix(in srgb, var(--orange) 22%, transparent); }
 .pill-indigo { background: var(--indigo-soft); color: var(--indigo-ink); border-color: color-mix(in srgb, var(--indigo) 22%, transparent); }
+.pill-teal   { background: var(--teal-soft); color: var(--teal-ink); border-color: color-mix(in srgb, var(--teal) 22%, transparent); }
+.pill-purple { background: var(--purple-soft); color: var(--purple-ink); border-color: color-mix(in srgb, var(--purple) 22%, transparent); }
 .pill-muted  { background: var(--background-2); color: var(--foreground-3); border-color: var(--border); }
 
+/* ── BUTTONS (Apple pill) ─────────────────────────────────────────── */
+
+.btn-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 9px 18px;
+  border-radius: var(--radius-pill);
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: -0.014em;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  box-shadow: var(--shadow-button);
+  transition: background var(--d-base) var(--ease-out),
+              box-shadow var(--d-base) var(--ease-out),
+              transform var(--d-base) var(--ease-out);
+  cursor: pointer;
+  border: none;
+  white-space: nowrap;
+}
+.btn-pill:hover {
+  background: var(--primary-hover);
+  box-shadow: var(--shadow-button-hover);
+}
+.btn-pill:active {
+  transform: scale(0.97);
+  background: var(--primary-active);
+}
+.btn-pill:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-pill-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 9px 18px;
+  border-radius: var(--radius-pill);
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: -0.014em;
+  background: var(--background-1);
+  color: var(--foreground);
+  border: 1px solid var(--border-2);
+  transition: background var(--d-base) var(--ease-out),
+              border-color var(--d-base) var(--ease-out);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.btn-pill-secondary:hover {
+  background: var(--background-2);
+  border-color: var(--border-strong);
+}
+.btn-pill-secondary:active {
+  transform: scale(0.98);
+}
+
+.btn-pill-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: var(--radius-pill);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: -0.011em;
+  background: transparent;
+  color: var(--foreground-2);
+  border: 1px solid transparent;
+  transition: background var(--d-base) var(--ease-out), color var(--d-base) var(--ease-out);
+  cursor: pointer;
+}
+.btn-pill-ghost:hover {
+  background: var(--background-2);
+  color: var(--foreground);
+}
+
+/* Tinted action button — soft accent background */
+.btn-pill-tinted {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 9px 18px;
+  border-radius: var(--radius-pill);
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: -0.014em;
+  background: var(--accent-dim);
+  color: var(--primary);
+  border: none;
+  transition: background var(--d-base) var(--ease-out);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.btn-pill-tinted:hover {
+  background: var(--accent-strong);
+}
+
+/* ── Hover helpers (CSS-only, safe in Server Components) ─────────── */
+
+.row-hover { transition: background var(--d-fast) var(--ease-standard); }
+.row-hover:hover { background: var(--background-2); }
+
+.subtle-link { transition: color var(--d-fast) var(--ease-standard); color: var(--foreground-3); }
+.subtle-link:hover { color: var(--foreground); }
+
+.accent-link { transition: color var(--d-fast) var(--ease-standard); color: var(--foreground-3); }
+.accent-link:hover { color: var(--primary); }
+
 /* ── Diff viewer ─────────────────────────────────────────────────── */
+
 .diff-added {
   background: color-mix(in srgb, var(--green) 14%, transparent);
   color: var(--green-ink);
@@ -369,29 +640,40 @@
 }
 .diff-context { color: var(--foreground-3); }
 
-/* ── Focus ring (Apple-style outline) ─────────────────────────────── */
+/* ── Focus ring (Apple-style) ────────────────────────────────────── */
+
 *:focus-visible {
   outline: 2px solid var(--ring);
   outline-offset: 2px;
   border-radius: var(--radius-xs);
 }
+button:focus-visible,
+a:focus-visible {
+  outline-offset: 3px;
+}
 
-/* ── AI analysis markdown body ────────────────────────────────────── */
-.analysis-body { font-size: 14px; line-height: 1.6; color: var(--foreground-2); }
+/* ── AI analysis markdown body ───────────────────────────────────── */
+
+.analysis-body { font-size: 14.5px; line-height: 1.6; color: var(--foreground-2); letter-spacing: -0.005em; }
 .analysis-body > *:first-child { margin-top: 0 !important; }
 .analysis-body > *:last-child  { margin-bottom: 0 !important; }
 .analysis-body h2 {
   font-size: 14px; font-weight: 600; color: var(--foreground);
-  margin-top: 22px; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;
-  letter-spacing: -0.018em;
+  margin-top: 24px; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;
+  letter-spacing: -0.022em;
+  text-transform: uppercase;
+  font-size: 11.5px;
+  color: var(--foreground-3);
+  letter-spacing: 0.04em;
 }
 .analysis-body h3 {
-  font-size: 13px; font-weight: 600; color: var(--foreground);
-  margin-top: 16px; margin-bottom: 4px;
+  font-size: 13.5px; font-weight: 600; color: var(--foreground);
+  margin-top: 18px; margin-bottom: 4px;
+  letter-spacing: -0.011em;
 }
 .analysis-body p { margin: 6px 0 10px; }
-.analysis-body ul { margin: 6px 0 12px; padding-left: 20px; list-style: disc; }
-.analysis-body ol { margin: 6px 0 12px; padding-left: 20px; list-style: decimal; }
+.analysis-body ul { margin: 6px 0 12px; padding-left: 22px; list-style: disc; }
+.analysis-body ol { margin: 6px 0 12px; padding-left: 22px; list-style: decimal; }
 .analysis-body li { margin: 3px 0; }
 .analysis-body strong { color: var(--foreground); font-weight: 600; }
 .analysis-body code {
@@ -399,93 +681,142 @@
   background: var(--background-2); padding: 1px 6px; border-radius: 4px;
   color: var(--foreground);
 }
-.analysis-body hr { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+.analysis-body hr { border: none; border-top: 1px solid var(--border); margin: 18px 0; }
 .analysis-body a { color: var(--primary); text-decoration: none; }
 .analysis-body a:hover { text-decoration: underline; }
 
-/* ── Scrollbar ───────────────────────────────────────────────────── */
+/* ── Scrollbar (subtle, Apple-feel) ──────────────────────────────── */
+
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
-  background: var(--border-2);
+  background: var(--gray-3);
   border-radius: var(--radius-pill);
   border: 2px solid transparent;
   background-clip: content-box;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background-color: var(--border-strong);
+  background-color: var(--gray-2);
   background-clip: content-box;
 }
 
-.divider-soft   { border-top: 1px solid var(--border); }
-.divider-strong { border-top: 1px solid var(--border-2); }
-
-/* ── Hover helpers (CSS-only, safe in Server Components) ─────────── */
-
-.row-hover {
-  transition: background 0.15s var(--ease-standard);
-}
-.row-hover:hover { background: var(--background-2); }
-
-.subtle-link {
-  transition: color 0.15s var(--ease-standard);
-  color: var(--foreground-3);
-}
-.subtle-link:hover { color: var(--foreground); }
-
-.accent-link {
-  transition: color 0.15s var(--ease-standard);
-  color: var(--foreground-3);
-}
-.accent-link:hover { color: var(--primary); }
-
-.btn-pill {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 8px 16px;
-  border-radius: var(--radius-pill);
-  font-size: 13px;
-  font-weight: 500;
-  letter-spacing: -0.011em;
-  background: var(--primary);
-  color: white;
-  box-shadow: 0 1px 2px rgba(0,113,227,0.30);
-  transition: background 0.18s var(--ease-standard), box-shadow 0.18s var(--ease-standard), transform 0.18s var(--ease-standard);
-  cursor: pointer;
-  border: none;
-}
-.btn-pill:hover {
-  background: var(--primary-hover);
-  box-shadow: 0 2px 8px rgba(0,113,227,0.35);
-}
-.btn-pill:active { transform: scale(0.98); }
-
-.btn-pill-secondary {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 8px 16px;
-  border-radius: var(--radius-pill);
-  font-size: 13px;
-  font-weight: 500;
-  letter-spacing: -0.011em;
-  background: var(--background-1);
-  color: var(--foreground);
-  border: 1px solid var(--border);
-  transition: background 0.18s var(--ease-standard), border-color 0.18s var(--ease-standard);
-  cursor: pointer;
-}
-.btn-pill-secondary:hover {
-  background: var(--background-2);
-  border-color: var(--border-2);
-}
+.divider-soft   { border-top: 1px solid var(--separator-thin); }
+.divider-strong { border-top: 1px solid var(--separator); }
+.divider-hairline { border-top: 1px solid var(--border); }
 
 /* ── Animations ──────────────────────────────────────────────────── */
+
 @keyframes fadeUp {
-  from { opacity: 0; transform: translateY(4px); }
+  from { opacity: 0; transform: translateY(6px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-.animate-fade-up { animation: fadeUp 0.28s var(--ease-standard) both; }
+.animate-fade-up { animation: fadeUp var(--d-slower) var(--ease-out) both; }
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.animate-fade-in { animation: fadeIn var(--d-slow) var(--ease-out) both; }
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.96); }
+  to   { opacity: 1; transform: scale(1); }
+}
+.animate-scale-in { animation: scaleIn var(--d-base) var(--ease-spring) both; }
+
+/* Stagger helper — use with style={{animationDelay: ...}} */
+.stagger-1 { animation-delay: 40ms; }
+.stagger-2 { animation-delay: 80ms; }
+.stagger-3 { animation-delay: 120ms; }
+.stagger-4 { animation-delay: 160ms; }
+
+/* ── Misc ────────────────────────────────────────────────────────── */
+
+/* Text gradient brand */
+.text-gradient-brand {
+  background: linear-gradient(135deg, var(--primary), var(--indigo));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Status dot with halo (used in chips, list rows) */
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+.status-dot-green  { background: var(--green);  box-shadow: 0 0 0 3px color-mix(in srgb, var(--green) 18%, transparent); }
+.status-dot-red    { background: var(--red);    box-shadow: 0 0 0 3px color-mix(in srgb, var(--red) 18%, transparent); }
+.status-dot-orange { background: var(--orange); box-shadow: 0 0 0 3px color-mix(in srgb, var(--orange) 18%, transparent); }
+.status-dot-muted  { background: var(--gray-3); }
+
+/* Hairline divider (1px on retina, 0.5px attempt elsewhere) */
+.hairline { background: var(--border); height: 1px; }
+
+/* Apple-style segmented control container */
+.segmented {
+  display: inline-flex;
+  background: var(--background-3);
+  border-radius: var(--radius-sm);
+  padding: 2px;
+  gap: 0;
+}
+.segmented > button {
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: 6px;
+  transition: background var(--d-fast) var(--ease-standard);
+  color: var(--foreground-3);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  letter-spacing: -0.011em;
+}
+.segmented > button[data-active="true"] {
+  background: var(--background-1);
+  color: var(--foreground);
+  box-shadow: var(--shadow-xs);
+}
+
+/* iOS-style switch (replaces the shadcn default for our forms) */
+.switch-ios {
+  position: relative;
+  width: 44px;
+  height: 26px;
+  background: var(--gray-4);
+  border-radius: var(--radius-pill);
+  border: none;
+  transition: background var(--d-base) var(--ease-out);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.switch-ios::before {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 22px;
+  height: 22px;
+  background: white;
+  border-radius: 50%;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.15), 0 2px 6px rgba(0,0,0,0.10);
+  transition: transform var(--d-base) var(--ease-spring);
+}
+.switch-ios[data-checked="true"] {
+  background: var(--green);
+}
+.switch-ios[data-checked="true"]::before {
+  transform: translateX(18px);
+}
+
+/* Mark text (highlight) */
+mark, .marked {
+  background: color-mix(in srgb, var(--yellow) 36%, transparent);
+  color: var(--foreground);
+  padding: 1px 3px;
+  border-radius: 3px;
+}

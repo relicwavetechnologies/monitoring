@@ -1,14 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Shield, Mail, Lock, ArrowRight, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
-import { Suspense } from "react";
+import {
+  Mail,
+  Lock,
+  ArrowRight,
+  Loader2,
+  CheckCircle2,
+  AlertCircle,
+} from "lucide-react";
 
 function LoginForm() {
   const router = useRouter();
@@ -34,9 +36,8 @@ function LoginForm() {
         redirect: false,
         callbackUrl,
       });
-      if (res?.error) {
-        setError("Invalid email or password.");
-      } else {
+      if (res?.error) setError("Invalid email or password.");
+      else {
         router.push(callbackUrl);
         router.refresh();
       }
@@ -59,142 +60,284 @@ function LoginForm() {
 
   if (verify || sent) {
     return (
-      <Card className="bg-card border-border shadow-xl shadow-violet-900/5">
-        <CardContent className="pt-8 pb-8 px-8 flex flex-col items-center text-center gap-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-50 border border-emerald-200">
-            <CheckCircle2 className="h-6 w-6 text-emerald-600" />
-          </div>
-          <div>
-            <h2 className="text-lg font-semibold">Check your email</h2>
-            <p className="text-sm text-muted-foreground mt-1">
-              A magic link has been sent to <strong>{email || "your email"}</strong>.<br />
-              Click the link to sign in.
-            </p>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Link expires in 10 minutes. Check your spam if you don&apos;t see it.
-          </p>
-        </CardContent>
-      </Card>
+      <div
+        className="surface-raised p-8 text-center animate-scale-in"
+        style={{ borderRadius: "var(--radius-lg)" }}
+      >
+        <div
+          className="mx-auto h-12 w-12 rounded-full flex items-center justify-center mb-4"
+          style={{
+            background: "var(--green-soft)",
+            border: "1px solid color-mix(in srgb, var(--green) 22%, transparent)",
+          }}
+        >
+          <CheckCircle2 className="h-6 w-6" style={{ color: "var(--green)" }} strokeWidth={2} />
+        </div>
+        <h2 className="text-title-3 mb-1.5">Check your email</h2>
+        <p className="text-subhead" style={{ color: "var(--foreground-3)" }}>
+          A magic link has been sent to{" "}
+          <strong style={{ color: "var(--foreground)" }}>{email || "your email"}</strong>.
+        </p>
+        <p
+          className="text-footnote mt-3"
+          style={{ color: "var(--foreground-4)" }}
+        >
+          Link expires in 10 minutes. Check your spam folder if you don't see it.
+        </p>
+      </div>
     );
   }
 
   return (
-    <Card className="bg-card border-border shadow-xl shadow-violet-900/5">
-      <CardHeader className="pb-4">
-        <CardTitle className="text-lg">Sign in</CardTitle>
-        <CardDescription>
-          {tab === "password" ? "Use your email and password" : "Receive a magic link by email"}
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Tab toggle */}
-        <div className="flex rounded-lg border border-border p-1 gap-1 bg-muted/40">
-          <button
-            type="button"
-            onClick={() => { setTab("password"); setError(""); }}
-            className={`flex-1 text-xs py-1.5 rounded-md font-medium transition-colors ${
-              tab === "password" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            Password
-          </button>
-          <button
-            type="button"
-            onClick={() => { setTab("magic"); setError(""); }}
-            className={`flex-1 text-xs py-1.5 rounded-md font-medium transition-colors ${
-              tab === "magic" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            Magic link
-          </button>
-        </div>
+    <div
+      className="surface-raised p-7 animate-scale-in"
+      style={{ borderRadius: "var(--radius-lg)" }}
+    >
+      {/* Segmented control */}
+      <div className="segmented w-full mb-5" role="tablist">
+        <button
+          type="button"
+          role="tab"
+          data-active={tab === "password"}
+          onClick={() => {
+            setTab("password");
+            setError("");
+          }}
+          className="flex-1"
+        >
+          Password
+        </button>
+        <button
+          type="button"
+          role="tab"
+          data-active={tab === "magic"}
+          onClick={() => {
+            setTab("magic");
+            setError("");
+          }}
+          className="flex-1"
+        >
+          Magic link
+        </button>
+      </div>
 
-        {tab === "password" ? (
-          <form onSubmit={handlePassword} className="space-y-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="email">Email</Label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="you@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="pl-9 bg-muted/40 border-border"
-                  required
-                  autoFocus
-                />
-              </div>
+      {tab === "password" ? (
+        <form onSubmit={handlePassword} className="space-y-3">
+          <div className="space-y-1.5">
+            <label
+              htmlFor="email"
+              className="text-footnote-em"
+              style={{ color: "var(--foreground)" }}
+            >
+              Email
+            </label>
+            <div className="relative">
+              <Mail
+                className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4"
+                style={{ color: "var(--foreground-4)" }}
+                strokeWidth={1.85}
+                aria-hidden
+              />
+              <input
+                id="email"
+                type="email"
+                placeholder="you@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full pl-9 pr-3 py-2.5 text-callout"
+                style={{
+                  background: "var(--background-2)",
+                  border: "1px solid var(--border)",
+                  borderRadius: "var(--radius-sm)",
+                  letterSpacing: "-0.014em",
+                  color: "var(--foreground)",
+                }}
+                required
+                autoFocus
+              />
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="password">Password</Label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="pl-9 bg-muted/40 border-border"
-                  required
-                />
-              </div>
+          </div>
+          <div className="space-y-1.5">
+            <label
+              htmlFor="password"
+              className="text-footnote-em"
+              style={{ color: "var(--foreground)" }}
+            >
+              Password
+            </label>
+            <div className="relative">
+              <Lock
+                className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4"
+                style={{ color: "var(--foreground-4)" }}
+                strokeWidth={1.85}
+                aria-hidden
+              />
+              <input
+                id="password"
+                type="password"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full pl-9 pr-3 py-2.5 text-callout"
+                style={{
+                  background: "var(--background-2)",
+                  border: "1px solid var(--border)",
+                  borderRadius: "var(--radius-sm)",
+                  letterSpacing: "-0.014em",
+                  color: "var(--foreground)",
+                }}
+                required
+              />
             </div>
-            {error && (
-              <div className="flex items-center gap-2 text-xs text-red-700 bg-red-50 border border-red-200 rounded-md px-2.5 py-2">
-                <AlertCircle className="h-3.5 w-3.5 shrink-0" />
-                {error}
-              </div>
+          </div>
+          {error && (
+            <div
+              className="flex items-center gap-2 px-3 py-2 text-footnote"
+              style={{
+                background: "var(--red-soft)",
+                color: "var(--red-ink)",
+                border: "1px solid color-mix(in srgb, var(--red) 22%, transparent)",
+                borderRadius: "var(--radius-sm)",
+              }}
+            >
+              <AlertCircle className="h-3.5 w-3.5 shrink-0" strokeWidth={2} />
+              {error}
+            </div>
+          )}
+          <button
+            type="submit"
+            className="btn-pill w-full mt-1"
+            disabled={loading}
+          >
+            {loading ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" strokeWidth={2} />
+                Signing in…
+              </>
+            ) : (
+              <>
+                Sign in
+                <ArrowRight className="h-4 w-4" strokeWidth={2} />
+              </>
             )}
-            <Button type="submit" className="w-full gap-2" disabled={loading}>
-              {loading ? <><Loader2 className="h-4 w-4 animate-spin" />Signing in…</> : <>Sign in<ArrowRight className="h-4 w-4" /></>}
-            </Button>
-          </form>
-        ) : (
-          <form onSubmit={handleMagicLink} className="space-y-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="email-magic">Email</Label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="email-magic"
-                  type="email"
-                  placeholder="you@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="pl-9 bg-muted/40 border-border"
-                  required
-                  autoFocus
-                />
-              </div>
+          </button>
+        </form>
+      ) : (
+        <form onSubmit={handleMagicLink} className="space-y-3">
+          <div className="space-y-1.5">
+            <label
+              htmlFor="email-magic"
+              className="text-footnote-em"
+              style={{ color: "var(--foreground)" }}
+            >
+              Email
+            </label>
+            <div className="relative">
+              <Mail
+                className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4"
+                style={{ color: "var(--foreground-4)" }}
+                strokeWidth={1.85}
+                aria-hidden
+              />
+              <input
+                id="email-magic"
+                type="email"
+                placeholder="you@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full pl-9 pr-3 py-2.5 text-callout"
+                style={{
+                  background: "var(--background-2)",
+                  border: "1px solid var(--border)",
+                  borderRadius: "var(--radius-sm)",
+                  letterSpacing: "-0.014em",
+                  color: "var(--foreground)",
+                }}
+                required
+                autoFocus
+              />
             </div>
-            <Button type="submit" className="w-full gap-2" disabled={loading || !email.trim()}>
-              {loading ? <><Loader2 className="h-4 w-4 animate-spin" />Sending…</> : <>Send magic link<ArrowRight className="h-4 w-4" /></>}
-            </Button>
-          </form>
-        )}
-      </CardContent>
-    </Card>
+            <p
+              className="text-footnote"
+              style={{ color: "var(--foreground-3)" }}
+            >
+              We'll send a one-tap sign-in link to your inbox.
+            </p>
+          </div>
+          <button
+            type="submit"
+            className="btn-pill w-full mt-1"
+            disabled={loading || !email.trim()}
+          >
+            {loading ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" strokeWidth={2} />
+                Sending…
+              </>
+            ) : (
+              <>
+                Send magic link
+                <ArrowRight className="h-4 w-4" strokeWidth={2} />
+              </>
+            )}
+          </button>
+        </form>
+      )}
+    </div>
   );
 }
 
 export default function LoginPage() {
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
-      <div className="absolute inset-0 bg-gradient-to-br from-violet-50/60 via-transparent to-transparent pointer-events-none" />
+    <div
+      className="min-h-screen flex flex-col items-center justify-center p-6"
+      style={{ background: "var(--background)" }}
+    >
+      {/* Soft accent glow behind the card — Apple's "ambient depth" */}
+      <div
+        aria-hidden
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background:
+            "radial-gradient(800px 400px at 50% 20%, rgba(0,122,255,0.06), transparent 70%)",
+        }}
+      />
 
-      <div className="relative w-full max-w-sm space-y-6">
-        <div className="flex flex-col items-center gap-3 text-center">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-violet-600 shadow-md shadow-violet-300/50 ring-1 ring-violet-300/40">
-            <Shield className="h-6 w-6 text-white" />
+      <div className="relative w-full max-w-[380px] space-y-7 animate-fade-up">
+        <div className="flex flex-col items-center text-center gap-4">
+          <div
+            aria-hidden
+            className="h-14 w-14 flex items-center justify-center"
+            style={{
+              borderRadius: 16,
+              background:
+                "linear-gradient(135deg, #007AFF 0%, #5856D6 100%)",
+              boxShadow:
+                "0 4px 12px rgba(0,122,255,0.25), 0 1px 2px rgba(0,0,0,0.04), inset 0 0 0 0.5px rgba(255,255,255,0.18)",
+            }}
+          >
+            <svg
+              width="26"
+              height="26"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="white"
+              strokeWidth="2.4"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+            </svg>
           </div>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight" style={{ fontFamily: "var(--font-jakarta)" }}>VisaWatch</h1>
-            <p className="text-sm text-muted-foreground mt-0.5">
-              Real-time visa policy change detection
+            <h1 className="text-large-title" style={{ fontWeight: 600 }}>
+              Welcome to VisaWatch
+            </h1>
+            <p
+              className="hero-sub mt-2"
+              style={{ fontSize: 16, color: "var(--foreground-3)" }}
+            >
+              Sign in to continue.
             </p>
           </div>
         </div>
@@ -202,6 +345,13 @@ export default function LoginPage() {
         <Suspense>
           <LoginForm />
         </Suspense>
+
+        <p
+          className="text-center text-footnote"
+          style={{ color: "var(--foreground-4)" }}
+        >
+          Need access? Contact your admin.
+        </p>
       </div>
     </div>
   );
