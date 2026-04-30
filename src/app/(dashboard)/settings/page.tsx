@@ -11,7 +11,7 @@ export default async function SettingsPage() {
   });
 
   return (
-    <div className="max-w-2xl mx-auto pb-12">
+    <div className="max-w-2xl mx-auto">
       <div className="mb-10 animate-fade-up">
         <span className="eyebrow inline-block mb-3">Account</span>
         <h1 className="hero-title">Settings</h1>

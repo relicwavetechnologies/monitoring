@@ -50,7 +50,7 @@ export default async function MonitoredUrlPage({
   const changesWithSite = url.changes.map((c) => ({ ...c, site: siteForCard }));
 
   return (
-    <div className="max-w-4xl mx-auto pb-12 animate-fade-up">
+    <div className="max-w-4xl mx-auto animate-fade-up">
       <Link
         href={`/sites/${url.site.id}`}
         className="subtle-link inline-flex items-center gap-1.5 mb-6"

@@ -20,7 +20,7 @@ export default async function SubscriptionsPage() {
   ]);
 
   return (
-    <div className="max-w-3xl mx-auto pb-12 animate-fade-up">
+    <div className="max-w-3xl mx-auto animate-fade-up">
       <div className="mb-8">
         <span className="eyebrow inline-block mb-3">Notifications</span>
         <h1 className="hero-title">Subscriptions</h1>

@@ -19,7 +19,7 @@ export default async function SitesPage() {
   });
 
   return (
-    <div className="max-w-5xl mx-auto pb-12">
+    <div className="max-w-5xl mx-auto">
       <div className="flex items-end justify-between mb-8 animate-fade-up">
         <div>
           <span className="eyebrow inline-block mb-3">Catalogue</span>

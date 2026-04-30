@@ -83,7 +83,7 @@ export default async function AdminPage() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto pb-12">
+    <div className="max-w-5xl mx-auto">
       {/* Hero */}
       <div className="mb-10 animate-fade-up">
         <span className="eyebrow inline-block mb-3">Operations</span>

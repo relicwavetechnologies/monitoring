@@ -41,7 +41,7 @@ export default async function ChangePage({ params }: { params: Promise<{ id: str
   const isHighSeverity = change.severity >= 4;
 
   return (
-    <div className="max-w-4xl mx-auto pb-12 animate-fade-up">
+    <div className="max-w-4xl mx-auto animate-fade-up">
       <Link
         href={`/sites/${change.siteId}`}
         className="subtle-link inline-flex items-center gap-1.5 mb-6"
