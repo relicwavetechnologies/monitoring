@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { openai, MODELS, modelCostUsd } from "@/lib/openai";
+import { openai, MODELS, modelCostUsd, parseJsonSafe } from "@/lib/openai";
 import { ChangeCategory } from "@/generated/prisma/enums";
 import {
   applyRules,
@@ -139,7 +139,7 @@ async function callModel(
     ],
   });
 
-  const raw = JSON.parse(res.choices[0].message.content ?? "{}");
+  const raw = parseJsonSafe(res.choices[0].message.content);
   const classification = ClassificationSchema.parse(raw);
 
   const tokensIn = res.usage?.prompt_tokens ?? 0;

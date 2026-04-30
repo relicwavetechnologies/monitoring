@@ -44,6 +44,18 @@ const COST_PER_MILLION: Array<{ match: string | RegExp; input: number; output: n
 
 const FALLBACK_COST = { input: 0.50, output: 2.00 };
 
+/**
+ * Parse JSON from an LLM response, stripping markdown code fences if present.
+ * Gemini and other models sometimes wrap JSON in ```json ... ``` even when
+ * response_format: json_object is requested.
+ */
+export function parseJsonSafe(raw: string | null | undefined): unknown {
+  const s = (raw ?? "{}").trim();
+  // Strip ```json ... ``` or ``` ... ``` wrappers
+  const stripped = s.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
+  return JSON.parse(stripped);
+}
+
 export function modelCostUsd(model: string, tokensIn: number, tokensOut: number): number {
   const entry = COST_PER_MILLION.find((e) =>
     typeof e.match === "string" ? e.match === model : e.match.test(model)

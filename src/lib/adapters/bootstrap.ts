@@ -1,4 +1,4 @@
-import { openai, MODELS } from "@/lib/openai";
+import { openai, MODELS, parseJsonSafe } from "@/lib/openai";
 import { z } from "zod";
 
 const AdapterDraftSchema = z.object({
@@ -41,6 +41,6 @@ Rules:
     temperature: 0.2,
   });
 
-  const raw = JSON.parse(response.choices[0].message.content ?? "{}");
+  const raw = parseJsonSafe(response.choices[0].message.content);
   return AdapterDraftSchema.parse(raw);
 }
