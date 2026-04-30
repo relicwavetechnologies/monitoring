@@ -51,10 +51,8 @@ export function MonitoredUrlRow({ url }: MonitoredUrlRowProps) {
 
   return (
     <div
-      className="flex items-center gap-3 px-5 py-3.5 transition-colors"
+      className="row-hover flex items-center gap-3 px-5 py-3.5"
       style={{ borderBottom: "1px solid var(--border)" }}
-      onMouseEnter={(e) => (e.currentTarget.style.background = "var(--background-2)")}
-      onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
     >
       <Link
         href={`/urls/${url.id}`}
@@ -104,10 +102,7 @@ export function MonitoredUrlRow({ url }: MonitoredUrlRowProps) {
 
         <Link
           href={`/urls/${url.id}`}
-          className="h-8 w-8 inline-flex items-center justify-center transition-colors rounded-md"
-          style={{ color: "var(--foreground-3)" }}
-          onMouseEnter={(e) => (e.currentTarget.style.color = "var(--foreground)")}
-          onMouseLeave={(e) => (e.currentTarget.style.color = "var(--foreground-3)")}
+          className="h-8 w-8 inline-flex items-center justify-center rounded-md subtle-link"
         >
           <ChevronRight className="h-4 w-4" strokeWidth={2} />
         </Link>

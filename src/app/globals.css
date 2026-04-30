@@ -613,28 +613,29 @@
   background: var(--accent-strong);
 }
 
-/* ── Top navigation link (horizontal header nav) ─────────────────── */
+/* ── Sidebar nav link ─────────────────────────────────────────────── */
 
-.topnav-link {
-  display: inline-flex;
+.sidebar-link {
+  display: flex;
   align-items: center;
-  padding: 5px 11px;
-  border-radius: 8px;
+  gap: 9px;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
   font-size: 13.5px;
   font-weight: 500;
   letter-spacing: -0.011em;
-  color: var(--foreground-2);
+  color: var(--foreground-3);
   white-space: nowrap;
   transition: background var(--d-fast) var(--ease-standard),
               color var(--d-fast) var(--ease-standard);
 }
-.topnav-link:hover {
+.sidebar-link:hover {
   background: var(--background-2);
   color: var(--foreground);
 }
-.topnav-link[data-active="true"] {
-  color: var(--primary);
+.sidebar-link[data-active="true"] {
   background: var(--accent-dim);
+  color: var(--primary);
   font-weight: 600;
 }
 
