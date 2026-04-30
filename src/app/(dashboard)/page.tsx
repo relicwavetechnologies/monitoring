@@ -191,11 +191,17 @@ async function ActivityPanel() {
     },
   });
 
-  const rows = sites.flatMap((s) => {
+  type Row = {
+    siteId: string;
+    siteName: string;
+    monitoredUrlId: string | null;
+    urlPath: string;
+  };
+  const rows: Row[] = sites.flatMap((s): Row[] => {
     if (s.monitoredUrls.length === 0) {
       return [{ siteId: s.id, siteName: s.name, monitoredUrlId: null, urlPath: "(no URLs yet)" }];
     }
-    return s.monitoredUrls.map((u) => {
+    return s.monitoredUrls.map((u): Row => {
       let urlPath = u.url;
       try {
         urlPath = new URL(u.url).pathname || "/";
