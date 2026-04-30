@@ -115,27 +115,23 @@ export default async function MonitoredUrlPage({
             label: "Last failure",
             value: url.lastFailureAt ? formatDistanceToNow(url.lastFailureAt) : "—",
           },
-        ].map(({ label, value }) => (
-          <div key={label} className="surface-flat p-4">
-            <div
-              style={{
-                fontSize: 11,
-                fontWeight: 500,
-                color: "var(--foreground-3)",
-                letterSpacing: "0.04em",
-                textTransform: "uppercase",
-              }}
-            >
-              {label}
+        ].map(({ label, value }, i) => (
+          <div
+            key={label}
+            className={`surface-flat animate-fade-up stagger-${i + 1}`}
+            style={{ padding: "16px 18px" }}
+          >
+            <div className="text-caption-2" style={{ color: "var(--foreground-3)" }}>
+              {label.toUpperCase()}
             </div>
             <div
-              className="tabular mt-1.5"
+              className="tabular mt-2"
               style={{
-                fontSize: 18,
+                fontSize: 22,
                 fontWeight: 600,
                 color: "var(--foreground)",
-                letterSpacing: "-0.018em",
-                lineHeight: 1.2,
+                letterSpacing: "-0.022em",
+                lineHeight: 1.1,
               }}
             >
               {value}
@@ -145,26 +141,11 @@ export default async function MonitoredUrlPage({
       </div>
 
       {/* Per-URL config */}
-      <section className="surface mb-10" style={{ padding: 22 }}>
-        <h2
-          className="mb-1"
-          style={{
-            fontSize: 16,
-            fontWeight: 600,
-            letterSpacing: "-0.018em",
-            color: "var(--foreground)",
-          }}
-        >
+      <section className="surface mb-10" style={{ padding: 24 }}>
+        <h2 className="text-headline mb-1" style={{ color: "var(--foreground)" }}>
           Configuration
         </h2>
-        <p
-          className="mb-5"
-          style={{
-            fontSize: 13,
-            color: "var(--foreground-3)",
-            letterSpacing: "-0.005em",
-          }}
-        >
+        <p className="text-footnote mb-5" style={{ color: "var(--foreground-3)" }}>
           Per-URL settings — selectors, fetch tier, escalation, mute patterns.
         </p>
         <UrlConfigForm
@@ -184,14 +165,7 @@ export default async function MonitoredUrlPage({
       {/* Changes */}
       <section>
         <div className="flex items-center justify-between mb-3">
-          <h2
-            style={{
-              fontSize: 16,
-              fontWeight: 600,
-              letterSpacing: "-0.018em",
-              color: "var(--foreground)",
-            }}
-          >
+          <h2 className="text-headline" style={{ color: "var(--foreground)" }}>
             Changes for this URL
           </h2>
           <span className="pill pill-muted tabular">{url._count.changes}</span>

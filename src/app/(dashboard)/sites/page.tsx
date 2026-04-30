@@ -1,6 +1,5 @@
 import { db } from "@/lib/db";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
 import { SeverityDot } from "@/components/dashboard/severity-badge";
 import { formatDistanceToNow } from "@/lib/time";
 import { Plus, Globe, ExternalLink, ChevronRight } from "lucide-react";
@@ -26,65 +25,37 @@ export default async function SitesPage() {
           <span className="eyebrow inline-block mb-3">Catalogue</span>
           <h1 className="hero-title">Sites</h1>
           <p className="hero-sub mt-2">
-            {sites.length} site{sites.length !== 1 ? "s" : ""} monitored ·
-            {" "}
+            {sites.length} site{sites.length !== 1 ? "s" : ""} monitored
+            {" · "}
             {sites.reduce((acc, s) => acc + s._count.monitoredUrls, 0)} URLs
           </p>
         </div>
-        <Link href="/sites/new">
-          <Button
-            className="gap-1.5 rounded-full px-4 h-9"
-            style={{
-              background: "var(--primary)",
-              color: "white",
-              fontWeight: 500,
-              fontSize: 13,
-              letterSpacing: "-0.011em",
-              boxShadow: "0 1px 2px rgba(0,113,227,0.30)",
-            }}
-          >
-            <Plus className="h-4 w-4" strokeWidth={2.4} />
-            Add site
-          </Button>
+        <Link href="/sites/new" className="btn-pill">
+          <Plus className="h-4 w-4" strokeWidth={2.4} />
+          Add site
         </Link>
       </div>
 
       {sites.length === 0 ? (
         <div
-          className="flex flex-col items-center justify-center py-24 text-center surface-flat"
+          className="flex flex-col items-center justify-center py-24 text-center surface-flat animate-fade-up"
           style={{ borderStyle: "dashed" }}
         >
           <div
-            className="h-12 w-12 rounded-full flex items-center justify-center mb-3"
+            className="h-12 w-12 rounded-full flex items-center justify-center mb-4"
             style={{ background: "var(--background-2)" }}
           >
             <Globe className="h-6 w-6" strokeWidth={1.6} style={{ color: "var(--foreground-4)" }} />
           </div>
-          <p
-            className="text-base font-semibold"
-            style={{ color: "var(--foreground)", letterSpacing: "-0.014em" }}
-          >
+          <p className="text-headline" style={{ color: "var(--foreground)" }}>
             No sites yet
           </p>
-          <p
-            className="mt-1.5 mb-5"
-            style={{ color: "var(--foreground-3)", fontSize: 14 }}
-          >
+          <p className="text-subhead mt-1.5 mb-5" style={{ color: "var(--foreground-3)" }}>
             Add your first visa site to start monitoring.
           </p>
-          <Link href="/sites/new">
-            <Button
-              className="rounded-full px-4 h-9 gap-1.5"
-              style={{
-                background: "var(--primary)",
-                color: "white",
-                fontWeight: 500,
-                fontSize: 13,
-              }}
-            >
-              <Plus className="h-4 w-4" />
-              Add site
-            </Button>
+          <Link href="/sites/new" className="btn-pill">
+            <Plus className="h-4 w-4" />
+            Add site
           </Link>
         </div>
       ) : (

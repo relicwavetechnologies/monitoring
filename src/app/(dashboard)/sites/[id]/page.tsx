@@ -99,65 +99,77 @@ export default async function SiteDetailPage({ params }: { params: Promise<{ id:
       {/* Back */}
       <Link
         href="/sites"
-        className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6"
+        className="subtle-link inline-flex items-center gap-1.5 mb-6"
+        style={{ fontSize: 13, letterSpacing: "-0.011em" }}
       >
-        <ArrowLeft className="h-4 w-4" />
-        All Sites
+        <ArrowLeft className="h-4 w-4" strokeWidth={2} />
+        All sites
       </Link>
 
       {/* Header */}
-      <div className="flex items-start justify-between mb-6">
-        <div>
-          <div className="flex items-center gap-2.5 mb-1">
-            <h1 className="text-xl font-semibold">{site.name}</h1>
+      <div className="flex items-start justify-between mb-6 gap-4 animate-fade-up">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2.5 mb-1.5 flex-wrap">
+            <h1 className="text-title-1" style={{ color: "var(--foreground)" }}>
+              {site.name}
+            </h1>
             {site.isActive ? (
-              <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[11px]">
-                <CheckCircle2 className="h-3 w-3 mr-1" />
+              <span className="pill pill-green">
+                <span className="status-dot status-dot-green" />
                 Active
-              </Badge>
+              </span>
             ) : (
-              <Badge variant="outline" className="text-muted-foreground text-[11px]">
-                <XCircle className="h-3 w-3 mr-1" />
-                Paused
-              </Badge>
+              <span className="pill pill-muted">Paused</span>
             )}
           </div>
           <a
             href={site.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1.5 transition-colors"
+            className="accent-link inline-flex items-center gap-1.5 text-subhead"
           >
-            {site.url}
-            <ExternalLink className="h-3.5 w-3.5" />
+            <span className="mono truncate">{site.url}</span>
+            <ExternalLink className="h-3.5 w-3.5 shrink-0 opacity-70" strokeWidth={1.85} />
           </a>
         </div>
         <SiteActionButtons siteId={site.id} isActive={site.isActive} />
       </div>
 
       {/* Stats cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-10">
         {[
-          { label: "Total Changes", value: site._count.changes, icon: BarChart2 },
-          { label: "Snapshots", value: site._count.snapshots, icon: Globe },
-          { label: "Poll Every", value: `${site.pollIntervalMin}m`, icon: Clock },
+          { label: "Total changes", value: site._count.changes.toLocaleString() },
+          { label: "Snapshots", value: site._count.snapshots.toLocaleString() },
+          { label: "Poll every", value: `${site.pollIntervalMin}m` },
           {
-            label: "Last Check",
+            label: "Last check",
             value: site.lastCheckedAt ? formatDistanceToNow(site.lastCheckedAt) : "Never",
-            icon: CheckCircle2,
           },
-        ].map(({ label, value, icon: Icon }) => (
-          <Card key={label} className="bg-card border-border/50">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 pt-4 px-4">
-              <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                {label}
-              </CardTitle>
-              <Icon className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent className="px-4 pb-4">
-              <div className="text-xl font-bold">{value}</div>
-            </CardContent>
-          </Card>
+        ].map(({ label, value }, i) => (
+          <div
+            key={label}
+            className={`surface-flat animate-fade-up stagger-${i + 1}`}
+            style={{ padding: "16px 18px" }}
+          >
+            <div
+              className="text-caption-2"
+              style={{ color: "var(--foreground-3)" }}
+            >
+              {label.toUpperCase()}
+            </div>
+            <div
+              className="tabular mt-2"
+              style={{
+                fontSize: 22,
+                fontWeight: 600,
+                letterSpacing: "-0.022em",
+                color: "var(--foreground)",
+                lineHeight: 1.1,
+              }}
+            >
+              {value}
+            </div>
+          </div>
         ))}
       </div>
 
@@ -192,31 +204,39 @@ export default async function SiteDetailPage({ params }: { params: Promise<{ id:
       <Separator className="mb-8" />
 
       {/* ── Monitored URLs (Phase 2b) ── */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between mb-3">
+      <div className="mb-10">
+        <div className="flex items-center justify-between mb-4 gap-3">
           <div className="flex items-center gap-2">
-            <Globe className="h-4 w-4 text-muted-foreground" />
-            <h2 className="text-sm font-semibold">Monitored URLs</h2>
-            <span className="text-xs text-muted-foreground">
-              · {site.monitoredUrls.length} URL{site.monitoredUrls.length === 1 ? "" : "s"}
+            <h2 className="text-headline" style={{ color: "var(--foreground)" }}>
+              Monitored URLs
+            </h2>
+            <span className="pill pill-muted tabular">
+              {site.monitoredUrls.length}
             </span>
           </div>
           <AddUrlForm siteId={site.id} />
         </div>
 
         {site.monitoredUrls.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-10 border border-dashed rounded-xl text-center">
-            <Globe className="h-7 w-7 text-muted-foreground mb-2" />
-            <p className="text-sm font-medium">No URLs monitored yet</p>
-            <p className="text-xs text-muted-foreground mt-1">
+          <div
+            className="flex flex-col items-center justify-center py-12 text-center surface-flat"
+            style={{ borderStyle: "dashed" }}
+          >
+            <div
+              className="h-10 w-10 rounded-full flex items-center justify-center mb-3"
+              style={{ background: "var(--background-2)" }}
+            >
+              <Globe className="h-5 w-5" strokeWidth={1.6} style={{ color: "var(--foreground-4)" }} />
+            </div>
+            <p className="text-callout-em" style={{ color: "var(--foreground)" }}>
+              No URLs monitored yet
+            </p>
+            <p className="text-footnote mt-1" style={{ color: "var(--foreground-3)" }}>
               Add a URL to start polling.
             </p>
           </div>
         ) : (
-          <div
-            className="rounded-md overflow-hidden"
-            style={{ border: "1px solid var(--border, #E8E8F2)" }}
-          >
+          <div className="surface-flat overflow-hidden">
             {site.monitoredUrls.map((u) => (
               <MonitoredUrlRow key={u.id} url={u} />
             ))}

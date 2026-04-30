@@ -133,27 +133,44 @@ export function AdapterWizard() {
         {STEPS.map((label, i) => (
           <div key={label} className="flex items-center gap-2">
             <div
-              className={cn(
-                "flex h-6 w-6 items-center justify-center rounded-full text-xs font-medium transition-colors",
-                i < step
-                  ? "bg-emerald-600 text-white"
-                  : i === step
-                    ? "bg-violet-600 text-white"
-                    : "bg-muted text-muted-foreground"
-              )}
+              className="flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold tabular transition-colors"
+              style={{
+                background:
+                  i < step
+                    ? "var(--green)"
+                    : i === step
+                    ? "var(--primary)"
+                    : "var(--background-3)",
+                color:
+                  i < step || i === step
+                    ? "white"
+                    : "var(--foreground-3)",
+                boxShadow:
+                  i === step
+                    ? "0 1px 2px rgba(0,122,255,0.30)"
+                    : i < step
+                    ? "0 1px 2px rgba(52,199,89,0.25)"
+                    : "none",
+              }}
             >
-              {i < step ? <CheckCircle2 className="h-3.5 w-3.5" /> : i + 1}
+              {i < step ? <CheckCircle2 className="h-3.5 w-3.5" strokeWidth={2.4} /> : i + 1}
             </div>
             <span
-              className={cn(
-                "text-sm",
-                i === step ? "font-medium text-foreground" : "text-muted-foreground"
-              )}
+              className="text-footnote-em"
+              style={{
+                color:
+                  i === step ? "var(--foreground)" : "var(--foreground-3)",
+                fontWeight: i === step ? 600 : 500,
+              }}
             >
               {label}
             </span>
             {i < STEPS.length - 1 && (
-              <ChevronRight className="h-4 w-4 text-muted-foreground mx-1" />
+              <ChevronRight
+                className="h-4 w-4 mx-1"
+                strokeWidth={2}
+                style={{ color: "var(--foreground-4)" }}
+              />
             )}
           </div>
         ))}

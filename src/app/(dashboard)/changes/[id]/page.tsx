@@ -126,26 +126,15 @@ export default async function ChangePage({ params }: { params: Promise<{ id: str
         </div>
 
         <h1
-          style={{
-            fontSize: 26,
-            lineHeight: 1.18,
-            letterSpacing: "-0.025em",
-            fontWeight: 700,
-            color: "var(--foreground)",
-            marginBottom: 8,
-          }}
+          className="text-title-1 mb-2"
+          style={{ color: "var(--foreground)" }}
         >
           {change.summary}
         </h1>
         {change.detail && (
           <p
-            className="mb-4"
-            style={{
-              fontSize: 15.5,
-              color: "var(--foreground-2)",
-              lineHeight: 1.55,
-              letterSpacing: "-0.011em",
-            }}
+            className="text-body mb-4"
+            style={{ color: "var(--foreground-2)" }}
           >
             {change.detail}
           </p>
@@ -159,19 +148,14 @@ export default async function ChangePage({ params }: { params: Promise<{ id: str
       {/* Evidence quotes */}
       {change.evidenceQuotes.length > 0 && (
         <section
-          className="surface mb-5"
-          style={{ padding: 20 }}
+          className="surface mb-5 animate-fade-up"
+          style={{ padding: 22 }}
         >
           <div className="flex items-center gap-2 mb-3">
             <Quote className="h-4 w-4" strokeWidth={2} style={{ color: "var(--primary)" }} />
             <h2
-              style={{
-                fontSize: 12,
-                fontWeight: 600,
-                letterSpacing: "0.04em",
-                textTransform: "uppercase",
-                color: "var(--foreground-3)",
-              }}
+              className="eyebrow"
+              style={{ margin: 0 }}
             >
               Evidence from source · {change.evidenceQuotes.length}
             </h2>
@@ -180,15 +164,13 @@ export default async function ChangePage({ params }: { params: Promise<{ id: str
             {change.evidenceQuotes.map((q, i) => (
               <li
                 key={i}
+                className="text-subhead"
                 style={{
                   borderLeft: "2px solid var(--accent-line)",
                   paddingLeft: 14,
                   paddingTop: 2,
                   paddingBottom: 2,
-                  fontSize: 14,
-                  lineHeight: 1.55,
                   color: "var(--foreground)",
-                  letterSpacing: "-0.011em",
                 }}
               >
                 {q}
@@ -199,32 +181,27 @@ export default async function ChangePage({ params }: { params: Promise<{ id: str
       )}
 
       {/* URL + confidence */}
-      <section className="surface mb-5" style={{ padding: 18 }}>
+      <section className="surface mb-5" style={{ padding: 20 }}>
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div className="min-w-0 flex-1">
-            <div className="label-mono mb-1.5">Monitored URL</div>
+            <div className="eyebrow mb-1.5">Monitored URL</div>
             <Link
               href={`/urls/${change.monitoredUrlId}`}
-              className="block truncate"
-              style={{
-                fontSize: 14,
-                fontWeight: 500,
-                color: "var(--foreground)",
-                letterSpacing: "-0.011em",
-              }}
+              className="text-subhead-em block truncate accent-link"
+              style={{ color: "var(--foreground)" }}
             >
               {change.monitoredUrl.url}
             </Link>
           </div>
 
-          <div className="flex items-center gap-5">
+          <div className="flex items-center gap-6">
             <div className="text-right">
-              <div className="label-mono mb-1.5">Confidence</div>
+              <div className="eyebrow mb-1.5">Confidence</div>
               <div className="flex items-center gap-2">
                 <div
                   style={{
-                    height: 4,
-                    width: 84,
+                    height: 5,
+                    width: 96,
                     borderRadius: 999,
                     background: "var(--background-3)",
                     overflow: "hidden",
@@ -241,17 +218,13 @@ export default async function ChangePage({ params }: { params: Promise<{ id: str
                           : "var(--red)",
                       width: `${confidencePct}%`,
                       borderRadius: 999,
+                      transition: "width var(--d-slow) var(--ease-out)",
                     }}
                   />
                 </div>
                 <span
-                  className="tabular"
-                  style={{
-                    fontSize: 13,
-                    fontWeight: 600,
-                    color: "var(--foreground)",
-                    letterSpacing: "-0.011em",
-                  }}
+                  className="tabular text-footnote-em"
+                  style={{ color: "var(--foreground)" }}
                 >
                   {confidencePct}%
                 </span>
@@ -262,12 +235,7 @@ export default async function ChangePage({ params }: { params: Promise<{ id: str
               href={change.monitoredUrl.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 transition-colors"
-              style={{
-                fontSize: 13,
-                color: "var(--foreground-3)",
-                letterSpacing: "-0.011em",
-              }}
+              className="subtle-link inline-flex items-center gap-1 text-footnote"
             >
               Visit URL
               <ExternalLink className="h-3.5 w-3.5" strokeWidth={1.85} />
@@ -278,25 +246,16 @@ export default async function ChangePage({ params }: { params: Promise<{ id: str
 
       {/* Classifier metadata */}
       {(change.classifierModel || change.classifierTokensIn) && (
-        <details className="group mb-5 surface" style={{ padding: 16 }}>
-          <summary
-            className="cursor-pointer inline-flex items-center gap-2 select-none transition-colors"
-            style={{
-              fontSize: 12,
-              color: "var(--foreground-3)",
-              fontWeight: 500,
-              letterSpacing: "0.04em",
-              textTransform: "uppercase",
-            }}
-          >
+        <details className="group mb-5 surface" style={{ padding: 18 }}>
+          <summary className="eyebrow cursor-pointer inline-flex items-center gap-2 select-none">
             <span>Classifier metadata</span>
             <span className="group-open:rotate-90 transition-transform">›</span>
           </summary>
           <div
-            className="mt-3 grid gap-2 mono"
+            className="mt-4 grid gap-2 mono"
             style={{
-              gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))",
-              fontSize: 12,
+              gridTemplateColumns: "repeat(auto-fill, minmax(170px, 1fr))",
+              fontSize: 12.5,
             }}
           >
             {[
@@ -320,20 +279,12 @@ export default async function ChangePage({ params }: { params: Promise<{ id: str
                 style={{
                   border: "1px solid var(--border)",
                   borderRadius: "var(--radius-sm)",
-                  padding: "8px 10px",
+                  padding: "9px 11px",
                   background: "var(--background-2)",
                 }}
               >
-                <div
-                  style={{
-                    fontSize: 10,
-                    textTransform: "uppercase",
-                    letterSpacing: "0.06em",
-                    color: "var(--foreground-3)",
-                    marginBottom: 2,
-                  }}
-                >
-                  {k}
+                <div className="text-caption-2" style={{ color: "var(--foreground-3)", marginBottom: 3 }}>
+                  {String(k).toUpperCase()}
                 </div>
                 <div style={{ color: "var(--foreground)" }}>{String(v)}</div>
               </div>
@@ -344,18 +295,11 @@ export default async function ChangePage({ params }: { params: Promise<{ id: str
 
       {/* Diff */}
       <div>
-        <div className="flex items-center gap-2 mb-3">
-          <h2
-            style={{
-              fontSize: 14,
-              fontWeight: 600,
-              color: "var(--foreground)",
-              letterSpacing: "-0.014em",
-            }}
-          >
+        <div className="flex items-center gap-3 mb-3 flex-wrap">
+          <h2 className="text-headline" style={{ color: "var(--foreground)" }}>
             Content diff
           </h2>
-          <span className="label-mono">
+          <span className="label-mono inline-flex items-center">
             <span
               className="inline-block w-1.5 h-1.5 rounded-full mr-1.5"
               style={{ background: "var(--green)" }}
