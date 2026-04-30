@@ -49,6 +49,7 @@ async function StatsRow() {
           }}
           onMouseEnter={(e) => ((e.currentTarget as HTMLAnchorElement).style.background = "var(--background-2)")}
           onMouseLeave={(e) => ((e.currentTarget as HTMLAnchorElement).style.background = "transparent")}
+
         >
           <span
             style={{ fontSize: 11.5, fontWeight: 500, color: "var(--foreground-4)", letterSpacing: "0.01em", marginBottom: 10 }}

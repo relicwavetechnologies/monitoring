@@ -635,6 +635,11 @@
 .row-hover { transition: background var(--d-fast) var(--ease-standard); }
 .row-hover:hover { background: var(--background-2); }
 
+.stat-col { transition: background 120ms ease; }
+.stat-col:hover { background: var(--background-2); }
+.stat-col .stat-col-arrow { opacity: 0; transition: opacity 120ms ease; }
+.stat-col:hover .stat-col-arrow { opacity: 1; }
+
 .subtle-link { transition: color var(--d-fast) var(--ease-standard); color: var(--foreground-3); }
 .subtle-link:hover { color: var(--foreground); }
 
