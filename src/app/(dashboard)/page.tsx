@@ -4,39 +4,71 @@ import { AiNoticeCards } from "@/components/dashboard/ai-notice-cards";
 import { EmptyState } from "@/components/dashboard/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Suspense } from "react";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, ArrowRight } from "lucide-react";
+import Link from "next/link";
 
 async function StatsRow() {
-  const [totalSites, activeSites, totalChanges, highSeverity] = await Promise.all([
+  const [totalSites, activeSites, totalChanges, highSeverity, totalUrls] = await Promise.all([
     db.site.count(),
     db.site.count({ where: { isActive: true } }),
     db.change.count(),
     db.change.count({ where: { severity: { gte: 3 } } }),
+    db.monitoredUrl.count({ where: { paused: false } }),
   ]);
 
   const stats = [
-    { n: totalSites,   label: "Monitored sites", sub: `${activeSites} active` },
-    { n: totalChanges, label: "Total changes",   sub: "all time" },
-    { n: highSeverity, label: "Notable changes", sub: "severity ≥ 3" },
-    { n: activeSites,  label: "Sites OK",        sub: "no recent issues" },
+    { n: totalSites,   label: "Sites monitored",  sub: `${activeSites} active`,         href: "/sites" },
+    { n: totalUrls,    label: "URLs tracked",      sub: "across all sites",               href: "/sites" },
+    { n: totalChanges, label: "Changes detected",  sub: "all time",                       href: "/" },
+    { n: highSeverity, label: "High severity",     sub: "severity 3 or above",            href: "/" },
   ];
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-10">
-      {stats.map(({ n, label, sub }, i) => (
-        <div
+    <div
+      className="animate-fade-up mb-8"
+      style={{
+        background: "var(--background-1)",
+        border: "1px solid var(--border)",
+        borderRadius: 12,
+        display: "grid",
+        gridTemplateColumns: "repeat(4, 1fr)",
+      }}
+    >
+      {stats.map(({ n, label, sub, href }, i) => (
+        <Link
           key={label}
-          className={`card-item animate-fade-up stagger-${i + 1}`}
+          href={href}
+          className="group"
+          style={{
+            padding: "22px 24px",
+            borderRight: i < stats.length - 1 ? "1px solid var(--border)" : "none",
+            display: "flex",
+            flexDirection: "column",
+            gap: 0,
+            transition: "background 120ms ease",
+          }}
+          onMouseEnter={(e) => ((e.currentTarget as HTMLAnchorElement).style.background = "var(--background-2)")}
+          onMouseLeave={(e) => ((e.currentTarget as HTMLAnchorElement).style.background = "transparent")}
         >
-          <div className="stat-block-value">{n.toLocaleString()}</div>
-          <div
-            className="mt-3"
-            style={{ fontSize: 13, fontWeight: 600, color: "var(--foreground)", letterSpacing: "-0.011em" }}
+          <span
+            style={{ fontSize: 11.5, fontWeight: 500, color: "var(--foreground-4)", letterSpacing: "0.01em", marginBottom: 10 }}
           >
-            {label}
+            {label.toUpperCase()}
+          </span>
+          <span
+            style={{ fontSize: 34, fontWeight: 700, letterSpacing: "-0.03em", color: "var(--foreground)", lineHeight: 1, fontVariantNumeric: "tabular-nums" }}
+          >
+            {n.toLocaleString()}
+          </span>
+          <div className="flex items-center justify-between mt-3">
+            <span style={{ fontSize: 12, color: "var(--foreground-4)" }}>{sub}</span>
+            <ArrowRight
+              className="h-3.5 w-3.5 opacity-0 group-hover:opacity-100 transition-opacity"
+              strokeWidth={2}
+              style={{ color: "var(--foreground-3)" }}
+            />
           </div>
-          <div className="stat-block-label mt-0.5">{sub}</div>
-        </div>
+        </Link>
       ))}
     </div>
   );
