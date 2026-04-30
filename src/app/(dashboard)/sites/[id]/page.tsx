@@ -10,9 +10,10 @@ import { Separator } from "@/components/ui/separator";
 import { ChangeCard } from "@/components/dashboard/change-card";
 import { SiteActionButtons } from "@/components/dashboard/site-action-buttons";
 import { AnalyzeButton } from "@/components/dashboard/analyze-button";
-import { MonitoredUrlRow } from "@/components/dashboard/monitored-url-row";
+import { TopicCardTile, type TopicCardData } from "@/components/dashboard/topic-card-tile";
 import { AddUrlForm } from "@/components/dashboard/add-url-form";
 import { EmptyState } from "@/components/dashboard/empty-state";
+import type { Prisma } from "@/generated/prisma/client";
 import { formatDistanceToNow } from "@/lib/time";
 import {
   ArrowLeft,
@@ -61,6 +62,7 @@ export default async function SiteDetailPage({ params }: { params: Promise<{ id:
           consecutiveFailures: true,
           lastFailureKind: true,
           lastCheckedAt: true,
+          topicCard: true,
         },
       },
       _count: { select: { snapshots: true, changes: true } },
@@ -225,9 +227,21 @@ export default async function SiteDetailPage({ params }: { params: Promise<{ id:
             </p>
           </div>
         ) : (
-          <div className="surface-flat overflow-hidden">
+          <div
+            className="grid gap-3"
+            style={{ gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))" }}
+          >
             {site.monitoredUrls.map((u) => (
-              <MonitoredUrlRow key={u.id} url={u} />
+              <TopicCardTile
+                key={u.id}
+                urlId={u.id}
+                url={u.url}
+                card={(u.topicCard as Prisma.JsonValue as TopicCardData | null) ?? null}
+                paused={u.paused}
+                failureKind={u.lastFailureKind}
+                consecutiveFailures={u.consecutiveFailures}
+                lastCheckedAt={u.lastCheckedAt}
+              />
             ))}
           </div>
         )}

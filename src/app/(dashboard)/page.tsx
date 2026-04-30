@@ -2,10 +2,12 @@ import { db } from "@/lib/db";
 import { ChangeCard } from "@/components/dashboard/change-card";
 import { AiNoticeCards } from "@/components/dashboard/ai-notice-cards";
 import { EmptyState } from "@/components/dashboard/empty-state";
+import { TopicCardTile, type TopicCardData } from "@/components/dashboard/topic-card-tile";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Suspense } from "react";
 import { CheckCircle2, ArrowRight } from "lucide-react";
 import Link from "next/link";
+import type { Prisma } from "@/generated/prisma/client";
 
 async function StatsRow() {
   const [totalSites, activeSites, totalChanges, highSeverity, totalUrls] = await Promise.all([
@@ -68,6 +70,56 @@ async function StatsRow() {
         </Link>
       ))}
     </div>
+  );
+}
+
+async function ChangedCards() {
+  // Phase 8: surface MonitoredUrls whose topic card has a lastChangeNote
+  // populated. These are the cards the user should look at right now.
+  const urls = await db.monitoredUrl.findMany({
+    where: { topicCardAt: { not: null } },
+    orderBy: { topicCardAt: "desc" },
+    take: 12,
+    select: {
+      id: true,
+      url: true,
+      topicCard: true,
+      paused: true,
+      lastFailureKind: true,
+      consecutiveFailures: true,
+      lastCheckedAt: true,
+      site: { select: { id: true, name: true } },
+    },
+  });
+
+  const withChange = urls.filter((u) => {
+    const c = u.topicCard as Prisma.JsonValue as TopicCardData | null;
+    return c?.lastChangeNote;
+  });
+
+  if (withChange.length === 0) return null;
+
+  return (
+    <section className="mb-10">
+      <SectionHead label="Recently changed" count={withChange.length} accent />
+      <div
+        className="grid gap-3"
+        style={{ gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))" }}
+      >
+        {withChange.map((u) => (
+          <TopicCardTile
+            key={u.id}
+            urlId={u.id}
+            url={u.url}
+            card={(u.topicCard as Prisma.JsonValue as TopicCardData | null) ?? null}
+            paused={u.paused}
+            failureKind={u.lastFailureKind}
+            consecutiveFailures={u.consecutiveFailures}
+            lastCheckedAt={u.lastCheckedAt}
+          />
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -163,6 +215,18 @@ export default function OverviewPage() {
         }
       >
         <StatsRow />
+      </Suspense>
+
+      <Suspense
+        fallback={
+          <div className="grid gap-3 mb-10" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))" }}>
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-32 rounded-xl" />
+            ))}
+          </div>
+        }
+      >
+        <ChangedCards />
       </Suspense>
 
       <Suspense

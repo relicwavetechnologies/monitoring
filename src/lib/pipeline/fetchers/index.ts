@@ -10,6 +10,7 @@
 import { fetchStatic } from "./static";
 import { fetchPlaywright } from "./playwright";
 import { fetchStealth } from "./stealth";
+import { fetchCamoufox } from "./camoufox";
 import { fetchExternal } from "./external";
 import { withHostLock } from "./host-semaphore";
 import {
@@ -28,6 +29,8 @@ export interface DispatchResult {
   outcome: FetchOutcome;
   /** Wall-clock duration of the actual fetch, in milliseconds. */
   durationMs: number;
+  /** Phase 8: optional viewport screenshot (PNG bytes). Only set by JS-rendering tiers. */
+  screenshot?: Buffer;
 }
 
 /** Run a fetch using the right tier. Always resolves; errors are folded
@@ -48,6 +51,7 @@ export async function dispatchFetch(input: {
         status: raw.status,
         outcome,
         durationMs: Date.now() - start,
+        screenshot: raw.screenshot,
       };
     } catch (err) {
       return {
@@ -60,7 +64,10 @@ export async function dispatchFetch(input: {
   });
 }
 
-async function runForMode(mode: FetchMode, url: string): Promise<{ html: string; status: number }> {
+async function runForMode(
+  mode: FetchMode,
+  url: string
+): Promise<{ html: string; status: number; screenshot?: Buffer }> {
   switch (mode) {
     case "STATIC":
       return fetchStatic(url);
@@ -68,6 +75,8 @@ async function runForMode(mode: FetchMode, url: string): Promise<{ html: string;
       return fetchPlaywright(url);
     case "STEALTH":
       return fetchStealth(url);
+    case "CAMOUFOX":
+      return fetchCamoufox(url);
     case "EXTERNAL":
       return fetchExternal(url);
   }

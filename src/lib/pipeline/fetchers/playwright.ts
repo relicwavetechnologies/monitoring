@@ -27,7 +27,14 @@ export async function fetchPlaywright(url: string): Promise<RawFetchResult> {
     await page.waitForTimeout(1_500);
     const html = await page.content();
     const status = response?.status() ?? 200;
-    return { html, status };
+    // Phase 8: capture a viewport screenshot for the visual-hash diff.
+    let screenshot: Buffer | undefined;
+    try {
+      screenshot = (await page.screenshot({ fullPage: false, type: "png" })) as Buffer;
+    } catch {
+      screenshot = undefined;
+    }
+    return { html, status, screenshot };
   } finally {
     await browser.close();
   }

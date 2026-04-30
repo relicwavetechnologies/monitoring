@@ -9,8 +9,11 @@
  *     npx patchright install chromium
  *
  * If patchright isn't installed, this fetcher falls back to vanilla
- * Playwright with a warning (so the site at least gets a JS fetch even
- * if it'll likely be blocked).
+ * Playwright with a warning.
+ *
+ * Phase 8: now also supports residential proxy injection (PROXY_URL env)
+ * and lightweight behavioral noise (mouse + scroll) to defeat the basic
+ * "no pointer events" Cloudflare heuristic.
  */
 import type { RawFetchResult } from "./static";
 import { fetchPlaywright } from "./playwright";
@@ -25,12 +28,44 @@ const HEADERS = {
   "Accept-Language": "en-US,en;q=0.9",
 };
 
-// patchright is an optional dependency: not in package.json by default so
-// CI / dev environments build cleanly without it. The runtime VM installs
-// it (and its Chromium binaries) explicitly. This `any` cast is intentional
-// — we treat the dynamic import as untyped at the boundary.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type PatchrightModule = { chromium: any } | null;
+
+interface ProxyConfig {
+  server: string;
+  username?: string;
+  password?: string;
+}
+
+function readProxyConfig(): ProxyConfig | null {
+  const url = process.env.PROXY_URL;
+  if (!url) return null;
+  try {
+    const u = new URL(url);
+    const username = u.username || process.env.PROXY_USERNAME || undefined;
+    const password = u.password || process.env.PROXY_PASSWORD || undefined;
+    u.username = "";
+    u.password = "";
+    return { server: u.toString(), username, password };
+  } catch {
+    return null;
+  }
+}
+
+async function injectBehavioralNoise(page: unknown): Promise<void> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const p = page as any;
+  try {
+    const x = 200 + Math.floor(Math.random() * 600);
+    const y = 200 + Math.floor(Math.random() * 400);
+    await p.mouse.move(x, y, { steps: 8 });
+    await p.waitForTimeout(400 + Math.floor(Math.random() * 600));
+    await p.evaluate(() => window.scrollTo({ top: window.innerHeight / 2, behavior: "smooth" }));
+    await p.waitForTimeout(800 + Math.floor(Math.random() * 600));
+  } catch {
+    // best-effort
+  }
+}
 
 export async function fetchStealth(url: string): Promise<RawFetchResult> {
   let patchright: PatchrightModule = null;
@@ -52,18 +87,32 @@ export async function fetchStealth(url: string): Promise<RawFetchResult> {
     return fetchPlaywright(url);
   }
 
-  const browser = await patchright.chromium.launch({ headless: true });
+  const proxy = readProxyConfig();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const launchOpts: any = { headless: true };
+  if (proxy) launchOpts.proxy = proxy;
+
+  const browser = await patchright.chromium.launch(launchOpts);
   try {
-    const context = await browser.newContext({ extraHTTPHeaders: HEADERS });
+    const context = await browser.newContext({
+      extraHTTPHeaders: HEADERS,
+      viewport: { width: 1366, height: 900 },
+    });
     const page = await context.newPage();
     const response = await page.goto(url, { waitUntil: "networkidle", timeout: 30_000 });
     // Cloudflare's challenge can take a few seconds to clear once it
-    // decides to let us through. The patchright binary handles the JS
-    // challenge; we just need to wait for the resulting redirect.
-    await page.waitForTimeout(3_000);
+    // decides to let us through. Patchright handles the JS challenge.
+    await injectBehavioralNoise(page);
+    await page.waitForTimeout(2_500 + Math.floor(Math.random() * 1_500));
     const html = await page.content();
     const status = response?.status() ?? 200;
-    return { html, status };
+    let screenshot: Buffer | undefined;
+    try {
+      screenshot = (await page.screenshot({ fullPage: false, type: "png" })) as Buffer;
+    } catch {
+      screenshot = undefined;
+    }
+    return { html, status, screenshot };
   } finally {
     await browser.close();
   }

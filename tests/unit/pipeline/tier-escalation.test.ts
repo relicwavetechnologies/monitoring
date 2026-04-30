@@ -2,10 +2,11 @@ import { describe, it, expect } from "vitest";
 import { decideNextTier, nextTier } from "@/lib/pipeline/fetchers/tier-escalation";
 
 describe("nextTier", () => {
-  it("walks the ladder STATIC → PLAYWRIGHT → STEALTH → EXTERNAL", () => {
+  it("walks the ladder STATIC → PLAYWRIGHT → STEALTH → CAMOUFOX → EXTERNAL", () => {
     expect(nextTier("STATIC")).toBe("PLAYWRIGHT");
     expect(nextTier("PLAYWRIGHT")).toBe("STEALTH");
-    expect(nextTier("STEALTH")).toBe("EXTERNAL");
+    expect(nextTier("STEALTH")).toBe("CAMOUFOX");
+    expect(nextTier("CAMOUFOX")).toBe("EXTERNAL");
   });
 
   it("returns null at the top of the ladder", () => {
@@ -87,9 +88,10 @@ describe("decideNextTier", () => {
   });
 
   it("walks the full ladder with repeated BLOCKED at threshold each tier", () => {
-    let mode: "STATIC" | "PLAYWRIGHT" | "STEALTH" | "EXTERNAL" = "STATIC";
+    // Phase 8: ladder is now STATIC → PLAYWRIGHT → STEALTH → CAMOUFOX → EXTERNAL
+    let mode: "STATIC" | "PLAYWRIGHT" | "STEALTH" | "CAMOUFOX" | "EXTERNAL" = "STATIC";
     let count = 0;
-    for (let i = 0; i < 12; i++) {
+    for (let i = 0; i < 16; i++) {
       const r = decideNextTier({
         currentMode: mode,
         consecutiveFailures: count,

@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 
-type FetchMode = "STATIC" | "PLAYWRIGHT" | "STEALTH" | "EXTERNAL";
+type FetchMode = "STATIC" | "PLAYWRIGHT" | "STEALTH" | "CAMOUFOX" | "EXTERNAL";
 
 interface UrlConfigFormProps {
   url: {
@@ -119,6 +119,7 @@ export function UrlConfigForm({ url }: UrlConfigFormProps) {
           <option value="STATIC">STATIC — undici, fast/free</option>
           <option value="PLAYWRIGHT">PLAYWRIGHT — vanilla headless</option>
           <option value="STEALTH">STEALTH — patchright (anti-Cloudflare)</option>
+          <option value="CAMOUFOX">CAMOUFOX — patched Firefox (alt fingerprint)</option>
           <option value="EXTERNAL">EXTERNAL — third-party scraper API</option>
         </select>
       </div>

@@ -8,10 +8,13 @@
  * next poll.
  */
 
-export type FetchMode = "STATIC" | "PLAYWRIGHT" | "STEALTH" | "EXTERNAL";
+export type FetchMode = "STATIC" | "PLAYWRIGHT" | "STEALTH" | "CAMOUFOX" | "EXTERNAL";
 export type FailureKind = "NETWORK" | "BLOCKED" | "TIMEOUT" | "PARSE" | "OTHER";
 
-const TIER_ORDER: FetchMode[] = ["STATIC", "PLAYWRIGHT", "STEALTH", "EXTERNAL"];
+// Phase 8: CAMOUFOX inserted between STEALTH and EXTERNAL. When Patchright
+// (Chromium) gets fingerprinted, Camoufox (patched Firefox) presents a
+// different surface area without paying for the third-party scraper API.
+const TIER_ORDER: FetchMode[] = ["STATIC", "PLAYWRIGHT", "STEALTH", "CAMOUFOX", "EXTERNAL"];
 
 /** What the next tier would be after the given one. NULL means we're already
  *  at the top of the ladder and there's nowhere left to escalate to. */

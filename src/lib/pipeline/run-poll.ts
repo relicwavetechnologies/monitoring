@@ -1,6 +1,5 @@
 import { gunzipSync } from "zlib";
 import { db } from "@/lib/db";
-import { crawlSite } from "@/lib/pipeline/crawl";
 import { dispatchFetch } from "@/lib/pipeline/fetchers";
 import { decideNextTier } from "@/lib/pipeline/fetchers/tier-escalation";
 import { extractContent } from "@/lib/pipeline/extract";
@@ -8,11 +7,15 @@ import { extractBlocks, computeBlocksHash, type Block } from "@/lib/pipeline/ext
 import { sha256, gzip } from "@/lib/pipeline/hash";
 import { computeDiff } from "@/lib/pipeline/diff";
 import { computeBlockDiff } from "@/lib/pipeline/diff-blocks";
+import { isAmbiguousDiff, semanticSimilarity } from "@/lib/pipeline/semantic-diff";
+import { visualHashFromPng, visuallyIdentical } from "@/lib/pipeline/visual-hash";
 import { checkStability } from "@/lib/pipeline/stability";
 import { classifyChange, type ClassifyResult } from "@/lib/pipeline/classify";
 import { maybeNotify } from "@/lib/pipeline/notify";
 import { shouldMute } from "@/lib/pipeline/mute";
 import { deliverToSubscribers } from "@/lib/pipeline/subscriptions";
+import { refreshTopicCard } from "@/lib/pipeline/topic-card-refresh";
+import type { StoredTopicCard } from "@/lib/adapters/topic-card";
 import { ChangeCategory } from "@/generated/prisma/enums";
 import { getLogger } from "@/lib/logger";
 
@@ -22,6 +25,7 @@ export type PollResult =
   | { status: "baseline"; snapshotId: string; pagesCrawled: number }
   | { status: "unchanged"; pagesCrawled: number }
   | { status: "insignificant_diff" }
+  | { status: "semantically_unchanged"; similarity: number }
   | { status: "pending_stability_check" }
   | { status: "change_detected"; changeId: string; classification: ClassifyResult }
   | { status: "duplicate_change"; changeId: string }
@@ -36,24 +40,6 @@ function isPrismaUniqueViolation(err: unknown): boolean {
     "code" in err &&
     (err as { code?: unknown }).code === "P2002"
   );
-}
-
-/**
- * Build stable aggregated text from crawled pages.
- * Pages are sorted by URL so the order is deterministic across polls —
- * a new page appearing / disappearing will itself count as a diff.
- */
-function aggregatePages(
-  pages: Array<{ url: string; path: string; title: string; text: string }>
-): string {
-  return pages
-    .slice()
-    .sort((a, b) => a.url.localeCompare(b.url))
-    .map((p) => {
-      const heading = `=== ${p.path}${p.title ? ` | ${p.title}` : ""} ===`;
-      return `${heading}\n${p.text.trim()}`;
-    })
-    .join("\n\n");
 }
 
 /**
@@ -84,157 +70,88 @@ export async function runPoll(monitoredUrlId: string): Promise<PollResult> {
       db.site.update({ where: { id: siteId }, data: { lastCheckedAt: checkedAt } }),
     ]);
 
-    // ── Deep tree crawl ──────────────────────────────────────────────────────
-    let crawlResult;
-    try {
-      crawlResult = await crawlSite(url.url, {
-        contentSelector: url.contentSelector,
-        stripPatterns: url.stripPatterns,
-        maxDepth: site.maxCrawlDepth,
-        maxPages: site.maxCrawlPages,
-        pageTimeoutMs: 10_000,
+    // ── Phase 8: single-URL fetch via the tier dispatcher ───────────────────
+    // Each MonitoredUrl is now its own page (the bootstrap crawler produced
+    // them at site-add time). No in-poll BFS — that contaminated snapshots
+    // by aggregating 20 pages into one hash.
+    const dispatch = await dispatchFetch({ url: url.url, mode: url.fetchMode });
+
+    if (dispatch.outcome.kind !== "OK") {
+      const decision = decideNextTier({
+        currentMode: url.fetchMode,
+        consecutiveFailures: url.consecutiveFailures,
+        outcomeKind: dispatch.outcome.kind,
+        autoEscalate: url.autoEscalate,
+        escalateAfter: url.escalateAfterFailures,
       });
-    } catch (err) {
-      plog.error({ err, url: url.url }, "crawl failed");
-      return { status: "fetch_failed", error: String(err) };
-    }
-
-    // ── Fallback: if crawl blocked (e.g. Cloudflare 403), use single-page fetch ─
-    let cleanText: string;
-    let pagesCrawled: number;
-    let httpStatus: number;
-    let manifest: string;
-
-    // ── Block-level extraction (Phase 2a) ────────────────────────────────────
-    const allBlocks: Block[] = [];
-    let strategy: "SELECTOR" | "READABILITY" | "BODY" = "SELECTOR";
-    const extractOpts = { selector: url.contentSelector, stripPatterns: url.stripPatterns };
-
-    function pushPageBlocks(html: string, pageMarker: string | null) {
-      if (pageMarker) {
-        allBlocks.push({
-          idx: allBlocks.length,
-          blockHash: sha256(`page:${pageMarker}`),
-          text: pageMarker,
-          kind: "h2",
-        });
-      }
-      const ext = extractBlocks(html, extractOpts);
-      if (ext.strategy === "BODY") strategy = "BODY";
-      for (const b of ext.blocks) {
-        allBlocks.push({ ...b, idx: allBlocks.length });
-      }
-    }
-
-    if (crawlResult.pages.length === 0) {
-      plog.warn(
-        { url: url.url, fetchMode: url.fetchMode },
-        "crawl returned 0 pages — falling back to single-page tiered fetch"
-      );
-
-      // ── Tiered fetch via the Phase 4 dispatcher ────────────────────────────
-      const dispatch = await dispatchFetch({ url: url.url, mode: url.fetchMode });
-
-      if (dispatch.outcome.kind !== "OK") {
-        // Run the auto-escalation decision and persist the new tier state.
-        const decision = decideNextTier({
-          currentMode: url.fetchMode,
-          consecutiveFailures: url.consecutiveFailures,
-          outcomeKind: dispatch.outcome.kind,
-          autoEscalate: url.autoEscalate,
-          escalateAfter: url.escalateAfterFailures,
-        });
-        await db.monitoredUrl.update({
-          where: { id: monitoredUrlId },
-          data: {
-            fetchMode: decision.newMode,
-            consecutiveFailures: decision.newConsecutiveFailures,
-            lastFailureAt: decision.recordFailureNow ? new Date() : url.lastFailureAt,
-            lastFailureKind: decision.newFailureKind,
-          },
-        });
-        if (decision.escalated) {
-          plog.warn(
-            {
-              url: url.url,
-              from: url.fetchMode,
-              to: decision.newMode,
-              reason: dispatch.outcome.reason,
-            },
-            "fetch tier escalated"
-          );
-        }
-        return {
-          status: "fetch_failed",
-          error: `${dispatch.outcome.kind}${dispatch.outcome.reason ? `:${dispatch.outcome.reason}` : ""}`,
-        };
-      }
-
-      // Successful fetch → reset the failure streak.
-      if (url.consecutiveFailures !== 0 || url.lastFailureKind !== null) {
-        await db.monitoredUrl.update({
-          where: { id: monitoredUrlId },
-          data: { consecutiveFailures: 0, lastFailureKind: null },
-        });
-      }
-
-      pushPageBlocks(dispatch.html, null);
-      cleanText = extractContent(dispatch.html, url.contentSelector, url.stripPatterns);
-      pagesCrawled = 1;
-      httpStatus = dispatch.status;
-      manifest = JSON.stringify({
-        crawledAt: new Date().toISOString(),
-        pagesCrawled: 1,
-        pagesDiscovered: 1,
-        fallback: true,
-        reason: "crawl_blocked",
-        fetchMode: url.fetchMode,
-        durationMs: dispatch.durationMs,
-        pages: [
+      await db.monitoredUrl.update({
+        where: { id: monitoredUrlId },
+        data: {
+          fetchMode: decision.newMode,
+          consecutiveFailures: decision.newConsecutiveFailures,
+          lastFailureAt: decision.recordFailureNow ? new Date() : url.lastFailureAt,
+          lastFailureKind: decision.newFailureKind,
+        },
+      });
+      if (decision.escalated) {
+        plog.warn(
           {
             url: url.url,
-            path: new URL(url.url).pathname,
-            depth: 0,
-            status: httpStatus,
-            chars: cleanText.length,
+            from: url.fetchMode,
+            to: decision.newMode,
+            reason: dispatch.outcome.reason,
           },
-        ],
-      });
-    } else {
-      // Crawl succeeded → reset the failure streak too. The crawl path uses
-      // STATIC undici under the hood; if it returned >0 pages, the URL is
-      // healthy at the static tier even if it had been escalating.
-      if (url.consecutiveFailures !== 0 || url.lastFailureKind !== null) {
-        await db.monitoredUrl.update({
-          where: { id: monitoredUrlId },
-          data: { consecutiveFailures: 0, lastFailureKind: null },
-        });
+          "fetch tier escalated"
+        );
       }
-      const sortedPages = crawlResult.pages.slice().sort((a, b) => a.url.localeCompare(b.url));
-      const rootPage = crawlResult.pages.find((p) => p.depth === 0) ?? crawlResult.pages[0];
-      for (const p of sortedPages) {
-        pushPageBlocks(p.html, `${p.path}${p.title ? ` | ${p.title}` : ""}`);
-      }
-      cleanText = aggregatePages(crawlResult.pages);
-      pagesCrawled = crawlResult.pages.length;
-      httpStatus = rootPage.status;
-      manifest = JSON.stringify({
-        crawledAt: new Date().toISOString(),
-        pagesCrawled,
-        pagesDiscovered: crawlResult.totalDiscovered,
-        pages: crawlResult.pages.map((p) => ({
-          url: p.url,
-          path: p.path,
-          title: p.title,
-          depth: p.depth,
-          status: p.status,
-          chars: p.text.length,
-        })),
+      return {
+        status: "fetch_failed",
+        error: `${dispatch.outcome.kind}${dispatch.outcome.reason ? `:${dispatch.outcome.reason}` : ""}`,
+      };
+    }
+
+    // Successful fetch → reset the failure streak.
+    if (url.consecutiveFailures !== 0 || url.lastFailureKind !== null) {
+      await db.monitoredUrl.update({
+        where: { id: monitoredUrlId },
+        data: { consecutiveFailures: 0, lastFailureKind: null },
       });
     }
+
+    // ── Block-level extraction (selector-scoped) ────────────────────────────
+    const allBlocks: Block[] = [];
+    let strategy: "SELECTOR" | "READABILITY" | "BODY" = "SELECTOR";
+    const ext = extractBlocks(dispatch.html, {
+      selector: url.contentSelector,
+      stripPatterns: url.stripPatterns,
+    });
+    if (ext.strategy === "BODY") strategy = "BODY";
+    for (const b of ext.blocks) {
+      allBlocks.push({ ...b, idx: allBlocks.length });
+    }
+
+    const cleanText = extractContent(dispatch.html, url.contentSelector, url.stripPatterns);
+    const pagesCrawled = 1;
+    const httpStatus = dispatch.status;
+    const manifest = JSON.stringify({
+      fetchedAt: new Date().toISOString(),
+      fetchMode: url.fetchMode,
+      durationMs: dispatch.durationMs,
+      url: url.url,
+      path: new URL(url.url).pathname,
+      status: httpStatus,
+      chars: cleanText.length,
+      blocks: allBlocks.length,
+    });
 
     const newHash = sha256(cleanText);
     const newBlocksHash = computeBlocksHash(allBlocks);
+
+    // ── Phase 8: visual hash (when the fetcher produced a screenshot) ───────
+    let newVisualHash: string | null = null;
+    if (dispatch.screenshot) {
+      newVisualHash = await visualHashFromPng(dispatch.screenshot);
+    }
 
     // ── Dedup short-circuit ──────────────────────────────────────────────────
     const prevSnapshot = await db.snapshot.findFirst({
@@ -246,10 +163,24 @@ export async function runPoll(monitoredUrlId: string): Promise<PollResult> {
       !!prevSnapshot?.blocksHash && prevSnapshot.blocksHash === newBlocksHash;
     const dedupByText =
       !prevSnapshot?.blocksHash && !!prevSnapshot && prevSnapshot.contentHash === newHash;
+    // Phase 8: third dedup signal — perceptual hash of the rendered viewport.
+    // Catches the SPA hydration race where DOM text bytes flicker but the
+    // rendered pixels are identical.
+    const dedupByVisual =
+      !!prevSnapshot?.visualHash &&
+      !!newVisualHash &&
+      visuallyIdentical(prevSnapshot.visualHash, newVisualHash);
 
-    if (prevSnapshot && (dedupByBlocks || dedupByText)) {
+    if (prevSnapshot && (dedupByBlocks || dedupByText || dedupByVisual)) {
       plog.debug(
-        { hash: newHash, blocksHash: newBlocksHash, pagesCrawled, dedupByBlocks },
+        {
+          hash: newHash,
+          blocksHash: newBlocksHash,
+          visualHash: newVisualHash,
+          pagesCrawled,
+          dedupByBlocks,
+          dedupByVisual,
+        },
         "content unchanged — skipping snapshot write"
       );
       return { status: "unchanged", pagesCrawled };
@@ -263,6 +194,7 @@ export async function runPoll(monitoredUrlId: string): Promise<PollResult> {
         monitoredUrlId,
         contentHash: newHash,
         blocksHash: newBlocksHash,
+        visualHash: newVisualHash,
         extractStrategy: strategy,
         htmlGz,
         textGz,
@@ -320,6 +252,24 @@ export async function runPoll(monitoredUrlId: string): Promise<PollResult> {
     }
 
     if (!diffResult.isSignificant) return { status: "insignificant_diff" };
+
+    // ── Phase 8: semantic-similarity short-circuit ───────────────────────────
+    // For ambiguous diffs (a lot of changed chars but possibly just rewording
+    // the same paragraphs), embed both texts and compute cosine similarity.
+    // Skips if the LLM call fails (returns null) — we just proceed.
+    if (isAmbiguousDiff(diffResult.unified, cleanText.length)) {
+      const prevText = prevSnapshot.textGz
+        ? gunzipSync(Buffer.from(prevSnapshot.textGz)).toString("utf8")
+        : "";
+      const sim = await semanticSimilarity(prevText, cleanText);
+      if (sim !== null && sim >= 0.92) {
+        plog.info(
+          { similarity: sim, url: url.url },
+          "diff was structurally large but semantically near-identical — skipping"
+        );
+        return { status: "semantically_unchanged", similarity: sim };
+      }
+    }
 
     // ── Stability check (per-URL) ────────────────────────────────────────────
     const stability = await checkStability(monitoredUrlId, newHash, diffResult.unified);
@@ -413,6 +363,27 @@ export async function runPoll(monitoredUrlId: string): Promise<PollResult> {
           : { status: "fetch_failed", error: "duplicate change but lookup empty" };
       }
       throw err;
+    }
+
+    // ── Phase 8: refresh the topic card with a "what's new" note ────────────
+    if (url.topicCard) {
+      try {
+        const refreshed = await refreshTopicCard({
+          card: url.topicCard as unknown as StoredTopicCard,
+          changeSummary: classification.summary,
+          changeDetail: classification.detail,
+          diffText: diffResult.unified,
+        });
+        await db.monitoredUrl.update({
+          where: { id: monitoredUrlId },
+          data: {
+            topicCard: refreshed as unknown as object,
+            topicCardAt: new Date(),
+          },
+        });
+      } catch (err) {
+        plog.warn({ err }, "topic card refresh threw — continuing");
+      }
     }
 
     // Phase 7: subscriber delivery (per-channel). Skipped when muted.

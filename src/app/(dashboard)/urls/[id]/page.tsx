@@ -6,12 +6,25 @@ import { PollButton } from "@/components/dashboard/poll-button";
 import { UrlConfigForm } from "@/components/dashboard/url-config-form";
 import { formatDistanceToNow } from "@/lib/time";
 import { ArrowLeft, ExternalLink } from "lucide-react";
+import type { TopicCardData } from "@/components/dashboard/topic-card-tile";
+import type { Prisma } from "@/generated/prisma/client";
 
 const FETCH_TONE: Record<string, string> = {
   STATIC: "pill-green",
   PLAYWRIGHT: "pill-blue",
   STEALTH: "pill-indigo",
+  CAMOUFOX: "pill-indigo",
   EXTERNAL: "pill-orange",
+};
+
+const CATEGORY_PALETTE: Record<string, { bg: string; ink: string }> = {
+  POLICY: { bg: "rgba(99,102,241,0.10)", ink: "#4338CA" },
+  FEES: { bg: "rgba(34,197,94,0.10)", ink: "#15803D" },
+  APPOINTMENTS: { bg: "rgba(234,88,12,0.10)", ink: "#C2410C" },
+  DOCUMENTS: { bg: "rgba(14,165,233,0.10)", ink: "#0369A1" },
+  NEWS: { bg: "rgba(168,85,247,0.10)", ink: "#7E22CE" },
+  OTHER: { bg: "rgba(115,115,115,0.10)", ink: "#525252" },
+  SKIP: { bg: "rgba(115,115,115,0.06)", ink: "#737373" },
 };
 
 export default async function MonitoredUrlPage({
@@ -48,6 +61,8 @@ export default async function MonitoredUrlPage({
 
   const siteForCard = { id: url.site.id, name: url.site.name, url: url.site.url };
   const changesWithSite = url.changes.map((c) => ({ ...c, site: siteForCard }));
+  const card = (url.topicCard as Prisma.JsonValue as TopicCardData | null) ?? null;
+  const palette = card ? CATEGORY_PALETTE[card.category] ?? CATEGORY_PALETTE.OTHER : null;
 
   return (
     <div className="max-w-4xl mx-auto animate-fade-up">
@@ -62,8 +77,22 @@ export default async function MonitoredUrlPage({
 
       {/* Hero */}
       <div className="mb-6">
-        <span className="eyebrow inline-block mb-3">Monitored URL</span>
-        <div className="flex items-center gap-3 flex-wrap mb-3">
+        {card && palette && (
+          <span
+            className="pill inline-flex mb-3"
+            style={{
+              background: palette.bg,
+              color: palette.ink,
+              fontSize: 10.5,
+              fontWeight: 600,
+              letterSpacing: "0.04em",
+            }}
+          >
+            {card.category}
+          </span>
+        )}
+        {!card && <span className="eyebrow inline-block mb-3">Monitored URL</span>}
+        <div className="flex items-center gap-3 flex-wrap mb-2">
           <h1
             className="break-all"
             style={{
@@ -74,7 +103,7 @@ export default async function MonitoredUrlPage({
               color: "var(--foreground)",
             }}
           >
-            {url.url}
+            {card?.title ?? url.url}
           </h1>
           <a
             href={url.url}
@@ -85,6 +114,66 @@ export default async function MonitoredUrlPage({
             <ExternalLink className="h-4 w-4" strokeWidth={1.85} />
           </a>
         </div>
+        {card && (
+          <p
+            className="mb-3"
+            style={{ fontSize: 14, color: "var(--foreground-2)", lineHeight: 1.6 }}
+          >
+            {card.summary}
+          </p>
+        )}
+        <a
+          href={url.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="accent-link inline-flex items-center gap-1.5 mb-3"
+          style={{ fontSize: 12 }}
+        >
+          <span className="mono break-all">{url.url}</span>
+        </a>
+        {card && card.lastChangeNote && (
+          <div
+            className="mb-3 surface-flat"
+            style={{
+              padding: "12px 16px",
+              background: "color-mix(in srgb, var(--orange) 8%, var(--background-1))",
+              border: "1px solid color-mix(in srgb, var(--orange) 30%, var(--border))",
+            }}
+          >
+            <div
+              className="text-footnote-em mb-1"
+              style={{ color: "var(--orange-ink)" }}
+            >
+              Latest change
+            </div>
+            <p
+              style={{ fontSize: 13.5, color: "var(--foreground)", lineHeight: 1.5 }}
+            >
+              {card.lastChangeNote}
+            </p>
+            {card.lastChangeAt && (
+              <p
+                className="mono mt-1"
+                style={{ fontSize: 11, color: "var(--foreground-4)" }}
+              >
+                {formatDistanceToNow(new Date(card.lastChangeAt))}
+              </p>
+            )}
+          </div>
+        )}
+        {card && card.importantFields.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 mb-3">
+            {card.importantFields.map((f) => (
+              <span
+                key={f}
+                className="pill pill-muted"
+                style={{ fontSize: 11 }}
+              >
+                {f}
+              </span>
+            ))}
+          </div>
+        )}
 
         <div className="flex items-center gap-2 flex-wrap">
           <span className={`pill ${FETCH_TONE[url.fetchMode] ?? "pill-muted"}`}>

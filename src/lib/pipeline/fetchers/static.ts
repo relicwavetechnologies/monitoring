@@ -15,6 +15,10 @@ const dispatcher = new Agent({ maxHeaderSize: 65536 });
 export interface RawFetchResult {
   html: string;
   status: number;
+  /** Phase 8: optional viewport screenshot (PNG bytes). Only set by JS-rendering
+   *  tiers (PLAYWRIGHT, STEALTH, CAMOUFOX). The pipeline turns this into a
+   *  perceptual hash for the multi-modal diff. */
+  screenshot?: Buffer;
 }
 
 export async function fetchStatic(url: string): Promise<RawFetchResult> {

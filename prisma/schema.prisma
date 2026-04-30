@@ -94,21 +94,24 @@ enum RenderMode {
   JS
 }
 
-/// Fetch tier (Phase 4). Each tier is more capable but more expensive than
-/// the last; auto-escalation moves a URL up a tier after repeated blocked
+/// Fetch tier (Phase 4 + Phase 8). Each tier is more capable but more expensive
+/// than the last; auto-escalation moves a URL up a tier after repeated blocked
 /// fetches. The tiers are:
-///   STATIC      — undici, plain HTTP. Fast and free. Works for plain HTML
-///                 sites with no anti-bot.
+///   STATIC      — undici, plain HTTP. Fast and free.
 ///   PLAYWRIGHT  — vanilla headless Chromium via playwright-core. Handles
 ///                 JS-rendered content. Detectable by 2026 Cloudflare.
 ///   STEALTH     — patchright (Chromium binary patches). Defeats most
 ///                 fingerprint-level detection. Heavier on CPU.
+///   CAMOUFOX    — patched Firefox build with engine-level stealth and
+///                 randomised fingerprints. Used when Cloudflare detects
+///                 Patchright's Chromium fingerprint. Heaviest tier short of EXTERNAL.
 ///   EXTERNAL    — third-party scraper API (Browserless, Scrapfly, ZenRows).
 ///                 Optional; configured via SCRAPER_API_URL / SCRAPER_API_KEY.
 enum FetchMode {
   STATIC
   PLAYWRIGHT
   STEALTH
+  CAMOUFOX
   EXTERNAL
 }
 
@@ -252,6 +255,13 @@ model MonitoredUrl {
   lastCheckedAt   DateTime?
   /// Per-URL stability state (Phase 2b moves it from Site.pendingDiff).
   pendingDiff     Json?
+  /// Phase 8: LLM-generated topic card describing what visa info this URL
+  /// covers. Shape: { title, summary, category, importantFields[], lastChangeNote? }.
+  /// Generated at site bootstrap, refreshed when the page changes meaningfully.
+  topicCard       Json?
+  /// Phase 8: when the LLM last refreshed `topicCard`. Used to decide when
+  /// to regenerate (e.g. on a sufficiently large diff).
+  topicCardAt     DateTime?
   createdAt       DateTime   @default(now())
   updatedAt       DateTime   @updatedAt
   site            Site       @relation(fields: [siteId], references: [id], onDelete: Cascade)
@@ -282,6 +292,14 @@ model Snapshot {
   extractStrategy String   @default("SELECTOR")
   htmlGz      Bytes
   textGz      Bytes
+  /// Phase 8: perceptual hash of a viewport screenshot (when the fetcher
+  /// supports it). Lets us detect "looks identical" even when the DOM
+  /// reorders or hydrates differently. NULL for STATIC fetcher snapshots.
+  visualHash  String?
+  /// Phase 8: cached embedding (1536-dim float32 packed into bytes) of the
+  /// snapshot's flat text. Used by the diff fallback to compute cosine
+  /// similarity when the block diff is ambiguous. Generated lazily.
+  embedding   Bytes?
   fetchedAt   DateTime @default(now())
   httpStatus  Int      @default(200)
   monitoredUrl MonitoredUrl @relation(fields: [monitoredUrlId], references: [id], onDelete: Cascade)
