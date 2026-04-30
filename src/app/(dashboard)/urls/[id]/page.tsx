@@ -118,21 +118,12 @@ export default async function MonitoredUrlPage({
         ].map(({ label, value }, i) => (
           <div
             key={label}
-            className={`surface-flat animate-fade-up stagger-${i + 1}`}
-            style={{ padding: "16px 18px" }}
+            className={`card-item animate-fade-up stagger-${i + 1}`}
           >
-            <div className="text-caption-2" style={{ color: "var(--foreground-3)" }}>
-              {label.toUpperCase()}
-            </div>
+            <div className="stat-block-label">{label}</div>
             <div
               className="tabular mt-2"
-              style={{
-                fontSize: 22,
-                fontWeight: 600,
-                color: "var(--foreground)",
-                letterSpacing: "-0.022em",
-                lineHeight: 1.1,
-              }}
+              style={{ fontSize: 24, fontWeight: 700, color: "var(--foreground)", letterSpacing: "-0.025em", lineHeight: 1.1 }}
             >
               {value}
             </div>
@@ -178,7 +169,7 @@ export default async function MonitoredUrlPage({
             <p style={{ fontSize: 14, letterSpacing: "-0.011em" }}>No changes detected yet.</p>
           </div>
         ) : (
-          <div className="surface-flat overflow-hidden">
+          <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))" }}>
             {changesWithSite.map((c) => (
               <ChangeCard key={c.id} change={c} showSite={false} />
             ))}

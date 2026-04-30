@@ -26,22 +26,16 @@ async function StatsRow() {
       {stats.map(({ n, label, sub }, i) => (
         <div
           key={label}
-          className={`surface-raised animate-fade-up stagger-${i + 1}`}
-          style={{ padding: "20px 22px" }}
+          className={`card-item animate-fade-up stagger-${i + 1}`}
         >
-          <div className="stat-number-lg">{n.toLocaleString()}</div>
+          <div className="stat-block-value">{n.toLocaleString()}</div>
           <div
-            className="text-footnote-em mt-3"
-            style={{ color: "var(--foreground)" }}
+            className="mt-3"
+            style={{ fontSize: 13, fontWeight: 600, color: "var(--foreground)", letterSpacing: "-0.011em" }}
           >
             {label}
           </div>
-          <div
-            className="text-footnote mt-0.5"
-            style={{ color: "var(--foreground-3)" }}
-          >
-            {sub}
-          </div>
+          <div className="stat-block-label mt-0.5">{sub}</div>
         </div>
       ))}
     </div>
@@ -74,7 +68,7 @@ async function RecentChanges() {
       {significant.length > 0 && (
         <section>
           <SectionHead label="Significant" count={significant.length} accent />
-          <div className="surface-flat overflow-hidden">
+          <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))" }}>
             {significant.map((c) => (
               <ChangeCard key={c.id} change={c} />
             ))}
@@ -85,7 +79,7 @@ async function RecentChanges() {
       {minor.length > 0 && (
         <section>
           <SectionHead label="Minor / cosmetic" count={minor.length} />
-          <div className="surface-flat overflow-hidden">
+          <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))" }}>
             {minor.map((c) => (
               <ChangeCard key={c.id} change={c} />
             ))}

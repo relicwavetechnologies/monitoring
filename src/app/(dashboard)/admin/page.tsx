@@ -60,21 +60,12 @@ export default async function AdminPage() {
     return (
       <div
         key={label}
-        className={`surface-flat animate-fade-up stagger-${(idx % 4) + 1}`}
-        style={{ padding: "16px 18px" }}
+        className={`card-item animate-fade-up stagger-${(idx % 4) + 1}`}
       >
-        <div className={STAT_LABEL} style={{ color: "var(--foreground-3)" }}>
-          {label.toUpperCase()}
-        </div>
+        <div className="stat-block-label">{label}</div>
         <div
           className="tabular mt-2"
-          style={{
-            fontSize: 22,
-            fontWeight: 600,
-            letterSpacing: "-0.022em",
-            color: "var(--foreground)",
-            lineHeight: 1.1,
-          }}
+          style={{ fontSize: 24, fontWeight: 700, letterSpacing: "-0.025em", color: "var(--foreground)", lineHeight: 1.1 }}
         >
           {value}
         </div>

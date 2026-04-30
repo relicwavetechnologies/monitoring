@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { formatDistanceToNow } from "@/lib/time";
-import { ExternalLink } from "lucide-react";
+import { Clock, ExternalLink } from "lucide-react";
 import { ChangeCategory, EmailStatus } from "@/generated/prisma/enums";
 
 interface ChangeCardProps {
@@ -28,6 +28,16 @@ const CATEGORY_LABELS: Record<ChangeCategory, string> = {
   UNKNOWN:              "Unknown",
 };
 
+/** Severity → pill colour class */
+const SEV_PILL: Record<number, string> = {
+  1: "pill-muted",
+  2: "pill-muted",
+  3: "pill-orange",
+  4: "pill-red",
+  5: "pill-red",
+};
+
+/** Left accent stripe colour — only sev 3+ */
 const SEV_STRIPE: Record<number, string> = {
   1: "transparent",
   2: "transparent",
@@ -42,64 +52,70 @@ export function ChangeCard({ change, showSite = true }: ChangeCardProps) {
   return (
     <Link
       href={`/changes/${change.id}`}
-      className="group relative flex"
-      style={{ borderBottom: "1px solid var(--border)" }}
+      className="group flex card-item gap-0 p-0 overflow-hidden"
+      style={{ display: "flex", marginBottom: 0 }}
     >
-      {/* Left severity stripe — only on notable+ */}
+      {/* Accent stripe — only sev 3+ */}
       <span
         aria-hidden
         className="shrink-0 self-stretch"
-        style={{ width: 3, background: SEV_STRIPE[sev] }}
+        style={{ width: 3, background: SEV_STRIPE[sev], borderRadius: "14px 0 0 14px" }}
       />
 
-      <div className="row-hover flex-1 px-5 py-4 min-w-0">
-        <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+      <div className="flex-1 min-w-0 px-5 py-4 row-hover" style={{ borderRadius: "0 14px 14px 0" }}>
+        {/* Top row — site + meta */}
+        <div className="flex items-center gap-2 mb-2 flex-wrap">
           {showSite && (
             <span
-              className="inline-flex items-center gap-1 truncate max-w-[42%] text-footnote"
-              style={{
-                color: "var(--foreground-3)",
-                fontWeight: 500,
-              }}
+              className="inline-flex items-center gap-1 truncate max-w-[44%]"
+              style={{ fontSize: 12, fontWeight: 600, color: "var(--foreground-3)", letterSpacing: "-0.005em" }}
             >
               {change.site.name}
-              <ExternalLink
-                size={10}
-                strokeWidth={2}
-                className="shrink-0 opacity-60"
-                aria-hidden
-              />
+              <ExternalLink size={10} strokeWidth={2} className="shrink-0 opacity-50" aria-hidden />
+            </span>
+          )}
+
+          <span className={`pill ${SEV_PILL[sev]}`} style={{ fontSize: 11 }}>
+            {CATEGORY_LABELS[change.category]}
+          </span>
+
+          {sev >= 3 && (
+            <span className={`sev-pill sev-${sev}`} style={{ fontSize: 11 }}>
+              sev {sev}
             </span>
           )}
 
           <span
-            className={`pill pill-${
-              sev >= 4 ? "red" : sev >= 3 ? "orange" : "muted"
-            }`}
+            className="ml-auto inline-flex items-center gap-1 shrink-0"
+            style={{ fontSize: 11, color: "var(--foreground-4)", fontVariantNumeric: "tabular-nums" }}
           >
-            {CATEGORY_LABELS[change.category]}
-          </span>
-
-          <span className="ml-auto label-mono shrink-0">
+            <Clock size={10} strokeWidth={2} aria-hidden />
             {formatDistanceToNow(change.detectedAt)}
           </span>
         </div>
 
+        {/* Summary — primary content */}
         <p
-          className="text-callout-em"
           style={{
+            fontSize: 14,
+            fontWeight: 600,
+            letterSpacing: "-0.014em",
             color: "var(--foreground)",
+            lineHeight: 1.4,
           }}
         >
           {change.summary}
         </p>
 
+        {/* Detail — secondary content */}
         {change.detail && (
           <p
-            className="text-footnote mt-1 line-clamp-2"
+            className="mt-1 line-clamp-2"
             style={{
+              fontSize: 13,
               color: "var(--foreground-3)",
               lineHeight: 1.5,
+              letterSpacing: "-0.005em",
             }}
           >
             {change.detail}
